@@ -1,0 +1,14 @@
+<resources>
+	<string name="app_name">Storage History</string>
+	<string name="backup_title">Prev. Versions</string>
+	<string name="analysis_title">Statistics</string>
+	<string name="analysis_message">Welcome!
+		\nI haven\'t detected any changes yet...
+		\nTap settings to change which folders I monitor.</string>
+	<string name="configuration_title">Settings</string>
+	<string name="configuration_header">Select items to monitor...</string>
+	<string name="configuration_footer">Browse For More Folders...</string>
+	<string name="shared_storage_name">Shared Storage</string>
+	<string name="app_directory_name">Internal Storage History Files</string>
+	<string name="notification_message">Monitoring files for changes...</string>
+</resources>

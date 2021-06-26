@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<item
+		android:id="@+id/navigation_left"
+		android:icon="@drawable/backup_icon_24"
+		android:title="@string/backup_title" />
+
+	<item
+		android:id="@+id/navigation_home"
+		android:icon="@drawable/analysis_icon_24"
+		android:title="@string/analysis_title" />
+
+	<item
+		android:id="@+id/navigation_right"
+		android:icon="@drawable/configuration_icon_24"
+		android:title="@string/configuration_title" />
+
+</menu>
