@@ -16,19 +16,19 @@ namespace StorageHistory
 
 	public class ConfigurationActivity: ListFragment
 	{
-		public static readonly Dictionary<string, string> SpecialFolders=
-			new Dictionary<string, string>
+		public static readonly Dictionary<string, int> SpecialFolders=
+			new Dictionary<string, int>
 			{
-				{ Environment.DirectoryDocuments,		"Documents Folder"		},
-				{ Environment.DirectoryDcim,			"Camera Roll"			},
-				{ Environment.DirectoryMusic,			"Music Folder"			},
-				{ Environment.DirectoryPictures,		"Pictures Folder"		},
-				{ Environment.DirectoryMovies,			"Movies Folder"			},
-				{ Environment.DirectoryAlarms,			"Alarms Folder"			},
-				{ Environment.DirectoryDownloads,		"Downloads Folder"		},
-				{ Environment.DirectoryNotifications,	"Notifications Folder"	},
-				{ Environment.DirectoryPodcasts,		"Podcasts Folder"		},
-				{ Environment.DirectoryRingtones,		"Ringtones Folder"		}
+				{ Environment.DirectoryDocuments,		Resource.String.directory_name__documents		},
+				{ Environment.DirectoryDcim,			Resource.String.directory_name__camera			},
+				{ Environment.DirectoryMusic,			Resource.String.directory_name__music			},
+				{ Environment.DirectoryPictures,		Resource.String.directory_name__pictures		},
+				{ Environment.DirectoryMovies,			Resource.String.directory_name__movies			},
+				{ Environment.DirectoryAlarms,			Resource.String.directory_name__alarms			},
+				{ Environment.DirectoryDownloads,		Resource.String.directory_name__downloads		},
+				{ Environment.DirectoryNotifications,	Resource.String.directory_name__notifications	},
+				{ Environment.DirectoryPodcasts,		Resource.String.directory_name__podcasts		},
+				{ Environment.DirectoryRingtones,		Resource.String.directory_name__ringtones		}
 			};
 
 		public List<string> Directories;
@@ -50,7 +50,7 @@ namespace StorageHistory
 			DirectoryLocations.Add( Environment.ExternalStorageDirectory.AbsolutePath );
 
 			foreach ( var entry in SpecialFolders ) {
-				Directories.Add( entry.Value );
+				Directories.Add( Resources.GetString(entry.Value) );
 				DirectoryLocations.Add( Environment.GetExternalStoragePublicDirectory(entry.Key).AbsolutePath );
 			}
 

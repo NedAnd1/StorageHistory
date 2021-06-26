@@ -8,7 +8,31 @@
 	<string name="configuration_title">Settings</string>
 	<string name="configuration_header">Select items to monitor...</string>
 	<string name="configuration_footer">Browse For More Folders...</string>
+	<string name="notification_message">Monitoring files for changes...</string>
 	<string name="shared_storage_name">Shared Storage</string>
 	<string name="app_directory_name">Internal Storage History Files</string>
-	<string name="notification_message">Monitoring files for changes...</string>
+
+	<string name="directory_name__documents">		Documents Folder		</string>
+	<string name="directory_name__camera">			Camera Roll				</string>
+	<string name="directory_name__music">			Music Folder			</string>
+	<string name="directory_name__pictures">		Pictures Folder			</string>
+	<string name="directory_name__movies">			Movies Folder			</string>
+	<string name="directory_name__alarms">			Alarms Folder			</string>
+	<string name="directory_name__downloads">		Downloads Folder		</string>
+	<string name="directory_name__notifications">	Notifications Folder	</string>
+	<string name="directory_name__podcasts">		Podcasts Folder			</string>
+	<string name="directory_name__ringtones">		Ringtones Folder		</string>
+
+	<string name="diralias__internal">			App Internal	</string>
+	<string name="diralias__documents">			Documents		</string>
+	<string name="diralias__camera">			Camera Roll		</string>
+	<string name="diralias__music">				Music			</string>
+	<string name="diralias__pictures">			Pictures		</string>
+	<string name="diralias__movies">			Movies			</string>
+	<string name="diralias__alarms">			Alarms			</string>
+	<string name="diralias__downloads">			Downloads		</string>
+	<string name="diralias__notifications">		Notifications	</string>
+	<string name="diralias__podcasts">			Podcasts		</string>
+	<string name="diralias__ringtones">			Ringtones		</string>
+
 </resources>
