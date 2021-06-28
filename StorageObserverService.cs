@@ -61,6 +61,7 @@ namespace StorageHistory
 			int sizeEstimate= directories.Count;
 			sizeEstimate*= avgDirectorySize; // make space for sub-directories
 
+			// Prepare the list of observer items we'll use to monitor each directory and subdirectory.
 			if ( @base == null )
 				@base= new List<ObserverItem>( sizeEstimate );
 			else {
@@ -69,6 +70,7 @@ namespace StorageHistory
 					@base.Capacity= sizeEstimate;
 			}
 
+			// Create and add an observer item for each directory and subdirectory.
 			foreach ( string path in directories )
 				monitorDirectory(path);
 			
@@ -80,6 +82,9 @@ namespace StorageHistory
 			}
 		}
 
+		/// <summary>
+		///  Recursively monitors subdirectories so the service works correctly.
+		/// </summary>
 		private static void monitorDirectory(string path)
 		{
 			try {
@@ -168,15 +173,16 @@ namespace StorageHistory
 			switch ( intent.Action )
 			{
 				case Intent.ActionBootCompleted:
-					if ( Preferences.Get(EnableBackup_KEY, EnableBackup_DEFAULT) || Preferences.Get(EnableStatistics_KEY, EnableStatistics_DEFAULT) )
-						context.StartForegroundService( new Intent( context, typeof(StorageObserverService) ) );
-					break;
 				case Intent.ActionMediaMounted:
+					if ( Preferences.Get(EnableBackup_KEY, EnableBackup_DEFAULT) || Preferences.Get(EnableStatistics_KEY, EnableStatistics_DEFAULT) )
+						context.StartForegroundService( new Intent( context, typeof(StorageObserverService) ) );  // starts or updates the service
 					break;
 				case Intent.ActionShutdown:
 					Synchronizer.OnExit();
 					break;
-				case Intent.ActionDeviceStorageLow:
+				#pragma warning disable CS0618
+				case Intent.ActionDeviceStorageLow: // not actually using this obsolete enumeration member
+				#pragma warning restore CS0618
 					break;
 			}
 		}

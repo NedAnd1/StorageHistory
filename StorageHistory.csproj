@@ -83,7 +83,7 @@
     <Compile Include="Helpers\Configuration.cs" />
     <Compile Include="Helpers\FileExtensions.cs" />
     <Compile Include="Helpers\PathExtensions.cs" />
-    <Compile Include="Helpers\StorageObserverService.cs" />
+    <Compile Include="StorageObserverService.cs" />
     <Compile Include="Helpers\RuntimeExtensions.cs" />
     <Compile Include="Helpers\Timeline.cs" />
     <Compile Include="MainActivity.cs" />
