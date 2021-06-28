@@ -77,14 +77,30 @@ namespace StorageHistory.Helpers
 
 
 		/// <summary>
-		///  Returns the string represented by the span of characters.
+		///  Returns the string referenced by an unsliced span of characters. 
 		/// </summary>
-		public static string AsString(this ReadOnlySpan<char> @this)
+		internal static string AsString(this ReadOnlySpan<char> @this)
 		{
 			var union= new SpanUnion { UnmanagedString= @this };
 			union.Pointer-= RuntimeHelpers.OffsetToStringData;
 			return union.ManagedString;
 		}
+
+
+		/// <summary>
+		///  Concatenates the string with a span of characters. 
+		/// </summary>
+		public static unsafe string Concat(this string strA, ReadOnlySpan<char> strB)
+        {
+            var strOut= new string( '\0' ,  checked(strA.Length+strB.Length) );
+            fixed ( char* outPtr= strOut )
+            {
+                var outSpan= new Span<char>(outPtr, strOut.Length);
+				strA.AsSpan().CopyTo( outSpan );
+				strB.CopyTo( outSpan.Slice(strA.Length) );
+            }
+            return strOut;
+        }
 
 
 		/// <summary>

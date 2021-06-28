@@ -64,12 +64,15 @@ namespace StorageHistory
 					header.Visibility= ViewStates.Gone;
 				else {
 					header.Visibility= ViewStates.Visible;
-					header.Text= dirPath;
+					header.Text= dirPath.ToUserPath();
 				}
 
 			var adapter= ListAdapter as Adapter;
 			if ( adapter != null )
+			{
+				adapter.basePath= dirPath;
 				adapter.Timeline= newTimeline;
+			}
 
 			return true;
 		}
@@ -82,6 +85,7 @@ namespace StorageHistory
 			private DateTime startTime;
 			private DateTime endTime;
 			private Context context;
+			public string basePath;
 
 			public Adapter(Context context) => this.context= context;
 			public Adapter(Context context, Timeline source) {
@@ -116,6 +120,7 @@ namespace StorageHistory
 
 				view.minTime= this.startTime;
 				view.maxTime= this.endTime;
+				view.basePath= this.basePath;
 				view.Source= @base[ position ];
 				view.Color= view.Source.GetHashColor(); // a unique color based on the hash code of the directory path
 
@@ -134,6 +139,7 @@ namespace StorageHistory
 		{
 			private Paint paint;
 			private Paint textPaint;
+			public string basePath;
 			public DateTime minTime;
 			public DateTime maxTime;
 			public Timeline.Directory Source;
@@ -157,7 +163,7 @@ namespace StorageHistory
 			protected override void OnDraw(Canvas canvas)
 			{
 				Source.GenerateOutput(minTime, maxTime, canvas.Width, canvas.Height);
-				canvas.DrawText(Source.absoluteLocation, 0, paint.TextSize + 8, textPaint);
+				canvas.DrawText(Source.absoluteLocation.ToUserPath(basePath), 8, paint.TextSize + 8, textPaint);
 				canvas.DrawLines(Source.output, paint);
 			}
 		}

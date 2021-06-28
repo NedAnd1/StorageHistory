@@ -14,6 +14,7 @@ using Fragment= AndroidX.Fragment.App.Fragment;
 
 namespace StorageHistory
 {
+	using Helpers;
 	using static Helpers.Configuration;
 
 	[Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true)]
@@ -57,8 +58,11 @@ namespace StorageHistory
 			if ( requestPermissions )
 				RequestPermissions(DefaultPermissionsRequired, 1);
 
+			PathExtensions.InitializeUserPaths(ApplicationContext);
+
 			// Start the service that monitors file changes
 			StartForegroundService( new Intent(this, typeof(StorageObserverService) ) );
+
 		}
 
 		/// <summary>

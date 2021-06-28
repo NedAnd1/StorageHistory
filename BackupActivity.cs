@@ -31,9 +31,9 @@ namespace StorageHistory
 			else CurrentDirectory= "/";
 
 			Items= new List<string>();
-			UpdateState( CurrentDirectory );
+			ListAdapter= new ArrayAdapter<string>(Context, Resource.Layout.backup_item);
 
-			ListAdapter= new ArrayAdapter<string>(Context, Resource.Layout.backup_item, Items);
+			UpdateState( CurrentDirectory );
 
 			// activity_backup.xml is added as a fragment
 			return inflater.Inflate(Resource.Layout.activity_backup, mainView, false);
@@ -58,23 +58,33 @@ namespace StorageHistory
 			if ( file.IsDirectory )
 			{
 				if ( itemPath.EndsWith("/..") ) // handles the directory "Up" action
-					itemPath= itemPath.Substring( 0, itemPath.LastIndexOf('/', itemPath.Length-4).Or(1) );
+					if ( header == null || header.Text.IndexOf('/') > 0 )
+						itemPath= itemPath.Substring( 0, itemPath.LastIndexOf('/', itemPath.Length-4).Or(1) );
+					else file= new Java.IO.File (  BackupCache_FOLDER  +  ( itemPath= "/" )  );  // revert from the expanded dir back to the root of the backup folder
 
 				CurrentDirectory= itemPath;
 				Items.Clear();
 				if ( CurrentDirectory.Length > 1 )
+				{
 					Items.Add("..");
-				Items.AddRange( file.List() ); // adds each file to the list of items
+					Items.AddRange( file.List() ); // adds each file to the list of items
+				}
+				else {
+					foreach ( string fileName in file.List() )
+						Items.Add( file.ExpandChild(fileName) );  // expands linearly nested directories
+				}
 
 				var adapter= ListAdapter as ArrayAdapter<string>;
-				if ( adapter != null ) {
+				if ( adapter != null )
+				{
 					adapter.Clear();
-					adapter.AddAll(Items);
+					foreach ( string realFilename in Items )						// removes the internal file extension of backup archives
+						adapter.Add( realFilename.ToUserFilename( parent: file ) );  // and transforms expanded dir paths into user-facing ones
 					adapter.NotifyDataSetChanged();
 				}
 
 				if ( header != null )
-					header.Text= itemPath;
+					header.Text= itemPath.ToUserPath();
 			}
 			else {
 				new BackupDialog().Show( ChildFragmentManager, "dialog" );
