@@ -223,39 +223,37 @@ namespace StorageHistory.Helpers
 			{
 				int sizeCount= 0;
 				if ( minSize != maxSize )
-					sizeCount= this.sizeCount; 
+					sizeCount= this.sizeCount;
 
-				if (  output == null  ||  ( sizeCount + 1 ) * 4 != output.Length  )
-					output= new float [ ( sizeCount + 1 ) * 4 ];
+				if (  output == null  ||  ( sizeCount + 1 ) * 4 != output.Length  )  // each line consists of 2 points (4 numbers)
+					output= new float [ ( sizeCount + 1 ) * 4 ];                      // 2 extra lines are drawn to ensure the given range // ( n-1 + 2 ) * 4
 
+				output[ 0 ]= 0; // sets the first x-value  // the composite line starts here
+				output[ 1 ]= outputHeight * 0.5f; // sets the default y-value
 
-				float xFactor= (float)outputWidth / ( maxTime.Ticks - minTime.Ticks ),
-				      yFactor= (float)outputHeight / ( maxSize - minSize );
-
-				output[0]= 0;
-				output[1]= outputHeight * 0.5f;
-
-				int j,
-					i= 0;
-				for ( j= 5;  j < output.Length; ++i, j+= 4 )
+				if ( sizeCount > 1 )
 				{
-					output[ j - 1 ]= ( sizes[i].Item1 - minTime ).Ticks * xFactor; // sets the x start-value
-					output[ j - 0 ]= ( maxSize - sizes[i].Item2 ) * yFactor; // sets the y start-value
+					float xFactor= (float)outputWidth / ( maxTime.Ticks - minTime.Ticks ),
+					      yFactor= (float)outputHeight / ( maxSize - minSize );
+
+					int i= 0;
+					for ( int j= 5;  j < output.Length; ++i, j+= 4 )
+					{
+						output[ j - 1 ]= ( sizes[i].Item1 - minTime ).Ticks * xFactor; // sets the x start-value
+						output[ j - 0 ]= ( maxSize - sizes[i].Item2 ) * yFactor; // sets the y start-value
+					}
+
+					for ( int j= 5; j < output.Length; j+= 4 )  // copies the start-point of each line to the end-point of the previous line
+					{
+						output[ j - 3 ]= output[ j - 1 ]; // sets the x end-value
+						output[ j - 2 ]= output[ j - 0 ]; // sets the y end-value
+					}
+
+					output[ 1 ]= output[ 3 ]; // sets the first y-value
 				}
 
-				for ( j= 5;  j < output.Length; j+= 4 ) {  // copies the start-point of each line to the end-point of the previous line
-					output[ j - 3 ]= output[ j - 1 ]; // sets the x end-value
-					output[ j - 2 ]= output[ j - 0 ]; // sets the y end-value
-				}
-				
-				output[ output.Length - 2 ]= outputWidth;
-				output[ output.Length - 1 ]= outputHeight * 0.5f;
-
-				if ( sizeCount > 0 )
-				{
-					output[ 1 ]= ( maxSize - sizes[0].Item2 ) * yFactor;
-					output[ output.Length - 1 ]= ( maxSize - sizes[ sizeCount - 1 ].Item2 ) * yFactor;
-				}
+				output[ output.Length - 2 ]= outputWidth; // sets the last x-value  // the composite line ends here
+				output[ output.Length - 1 ]= output[ output.Length - 3 ]; // sets the last y-value
 			}
 
 			public override int GetHashCode() => absoluteLocation.GetHashCode();
