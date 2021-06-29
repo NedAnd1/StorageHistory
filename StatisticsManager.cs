@@ -51,15 +51,15 @@ namespace StorageHistory
 			return new Snapshot(matches); // returns a profile of the matches
 		}
 
-		public static Timeline RetrieveTimeline(string basePath= null)
+		public static Timeline RetrieveTimeline(string basePath= null, DateTime startTime= default)
 		{
 			if ( snapshotsCache == null )
 				initializeCache();
 
 			if ( snapshotsCache.Count > 0 )
 				if ( basePath != null )
-					return new Timeline ( snapshotsCache, basePath );
-				else return new Timeline ( snapshotsCache );
+					return new Timeline ( snapshotsCache, basePath, startTime );
+				else return new Timeline ( snapshotsCache, startTime );
 			else return new Timeline();
 		}
 
@@ -127,6 +127,7 @@ namespace StorageHistory
 				snapshotsCache.Add(currSnapshot);
 			}
 
+			Os.Close(snapshotsFile); // no longer need the file
 		}
 
 	}

@@ -4,12 +4,28 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-	<TextView
-		android:id="@+id/analysis_header"
+	<RelativeLayout
 		android:layout_width="match_parent"
-		android:layout_height="wrap_content" />
+		android:layout_height="wrap_content"
+		android:paddingHorizontal="@dimen/activity_horizontal_margin"
+		android:paddingVertical="@dimen/analysis_vertical_margin" >
 
-	<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		<TextView
+			android:id="@+id/analysis_header"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_centerVertical="true"
+			android:paddingRight="@dimen/activity_horizontal_margin" />
+
+		<Spinner
+			android:id="@+id/analysis_time_selector"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_toRightOf="@id/analysis_header" />
+
+	</RelativeLayout>
+
+	<RelativeLayout
 		android:orientation="vertical"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent">
@@ -19,8 +35,7 @@
 			android:choiceMode="singleChoice"
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"
-			android:drawSelectorOnTop="false"
-			android:textFilterEnabled="true" />
+			android:drawSelectorOnTop="false" />
  
 		<TextView
 			android:id="@id/android:empty"

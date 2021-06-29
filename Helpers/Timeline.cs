@@ -18,7 +18,7 @@ namespace StorageHistory.Helpers
 		public DateTime endTime;
 		public HashSet<Directory> directories;
 
-		public Timeline(IReadOnlyList<Snapshot> snapshots)
+		public Timeline(IReadOnlyList<Snapshot> snapshots, DateTime minTime= default)
 		{
 			int snapshotIndex= snapshots.Count - 1;
 			var currSnapshot= snapshots[ snapshotIndex ];
@@ -30,16 +30,18 @@ namespace StorageHistory.Helpers
 
 			#region Add Latest Snapshot To The Timeline
 
-				foreach ( var directory in currSnapshot.children )
-					if ( directory.parentLocation == null )
-					{
-						var parentDirectory= new Directory();
-						parentDirectory.absoluteLocation= directory.absoluteLocation;
-						parentDirectory.sizes= new (DateTime, int) [ snapshots.Count ];
-						parentDirectory.sizes[ snapshotIndex ]= ( currSnapshot.averageTime, directory.sizeDelta );
-						directories.Add(parentDirectory);
-						timelineParents.Add(directory.absoluteLocation);
-					}
+				if ( currSnapshot.averageTime < minTime )
+					return ;
+				else foreach ( var directory in currSnapshot.children )
+						if ( directory.parentLocation == null )
+						{
+							var parentDirectory= new Directory();
+							parentDirectory.absoluteLocation= directory.absoluteLocation;
+							parentDirectory.sizes= new (DateTime, int) [ snapshots.Count ];
+							parentDirectory.sizes[ snapshotIndex ]= ( currSnapshot.averageTime, directory.sizeDelta );
+							directories.Add(parentDirectory);
+							timelineParents.Add(directory.absoluteLocation);
+						}
 
 			#endregion
 
@@ -50,6 +52,8 @@ namespace StorageHistory.Helpers
 				while ( snapshotIndex > 0 )
 				{
 					currSnapshot= snapshots[ --snapshotIndex ];
+					if ( currSnapshot.averageTime < minTime )
+						break;
 
 					foreach ( var snapshotChild in currSnapshot.children )
 						if ( parentsToSkip.Contains( snapshotChild.parentLocation ) ) // skip the children of parents that already have the info we need
@@ -89,7 +93,7 @@ namespace StorageHistory.Helpers
 
 		}
 
-		public Timeline(IReadOnlyList<Snapshot> snapshots, string basePath)
+		public Timeline(IReadOnlyList<Snapshot> snapshots, string basePath, DateTime minTime= default)
 		{
 			int snapshotIndex= snapshots.Count - 1;
 			var currSnapshot= snapshots[ snapshotIndex ];
@@ -112,16 +116,18 @@ namespace StorageHistory.Helpers
 
 			#region Add Latest Snapshot To The Timeline
 
-				foreach ( var directory in currSnapshot.children )
-					if ( directory.parentLocation == basePath )
-					{
-						var parentDirectory= new Directory();
-						parentDirectory.absoluteLocation= directory.absoluteLocation;
-						parentDirectory.sizes= new (DateTime, int) [ snapshots.Count ];
-						parentDirectory.sizes[ snapshotIndex ]= ( currSnapshot.averageTime, directory.sizeDelta );
-						directories.Add(parentDirectory);
-						timelineParents.Add(directory.absoluteLocation);
-					}
+				if ( currSnapshot.averageTime < minTime )
+					return ;
+				else foreach ( var directory in currSnapshot.children )
+						if ( directory.parentLocation == basePath )
+						{
+							var parentDirectory= new Directory();
+							parentDirectory.absoluteLocation= directory.absoluteLocation;
+							parentDirectory.sizes= new (DateTime, int) [ snapshots.Count ];
+							parentDirectory.sizes[ snapshotIndex ]= ( currSnapshot.averageTime, directory.sizeDelta );
+							directories.Add(parentDirectory);
+							timelineParents.Add(directory.absoluteLocation);
+						}
 
 			#endregion
 
@@ -135,6 +141,8 @@ namespace StorageHistory.Helpers
 				while ( snapshotIndex > 0 )
 				{
 					currSnapshot= snapshots[ --snapshotIndex ];
+					if ( currSnapshot.averageTime < minTime )
+						break;
 
 					foreach ( var snapshotChild in currSnapshot.children )
 						if ( parentsToSkip.Contains( snapshotChild.parentLocation ) ) // skip the children of parents that already have the info we need

@@ -12,6 +12,27 @@
 	<string name="shared_storage_name">Shared Storage</string>
 	<string name="app_directory_name">Internal Storage History Files</string>
 
+	<plurals name="past_hours">
+		<item quantity="one">Past Hour</item> 
+		<item quantity="other">Past %d Hours</item>
+	</plurals>
+	<plurals name="past_days">
+		<item quantity="one">Past Day</item> 
+		<item quantity="other">Past %d Days</item>
+	</plurals>
+	<integer-array name="past_day_string_keys">
+		<item>7</item>
+		<item>30</item>
+		<item>365</item>
+		<item>0</item>
+	</integer-array>
+	<string-array name="past_day_string_values">
+		<item>Past Week</item>
+		<item>Past Month</item>
+		<item>Past Year</item>
+		<item>All Time</item>
+	</string-array>
+
 	<string name="directory_name__documents">		Documents Folder		</string>
 	<string name="directory_name__camera">			Camera Roll				</string>
 	<string name="directory_name__music">			Music Folder			</string>

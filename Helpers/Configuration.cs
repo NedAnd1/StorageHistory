@@ -27,6 +27,12 @@ namespace StorageHistory.Helpers
 
 
 		/// <summary>
+		///  The number of hours we should analyze in <see cref="AnalysisActivity"/>, with 1 month as the default.
+		/// </summary>
+		public const string AnalysisDuration_KEY= "analysisDuration";
+		public const int AnalysisDuration_DEFAULT= 24 * 30;
+
+		/// <summary>
 		///  The average size of a monitored directory by directory count.
 		/// </summary>
 		public const string AvgDirectorySize_KEY= "avgDirectorySize";
