@@ -6,6 +6,7 @@ using Android.Content;
 using Android.Graphics;
 using Android.Runtime;
 using Android.Widget;
+using Android.Text.Format;
 using AndroidX.Fragment.App;
 using Xamarin.Essentials;
 using System.Collections.Generic;
@@ -195,9 +196,7 @@ namespace StorageHistory
 				this.Timeline= source;
 			}
 
-			public Timeline.Directory this[ int position ] {
-				get => @base[ position ];
-			}
+			public Timeline.Directory this[ int position ] => @base[ position ];
 
 			public Timeline Timeline {
 				set {
@@ -265,10 +264,29 @@ namespace StorageHistory
 
 			protected override void OnDraw(Canvas canvas)
 			{
+				textPaint.TextAlign= Paint.Align.Left;
 				Source.GenerateOutput(minTime, maxTime, canvas.Width, canvas.Height-verticalMargins);
 				canvas.Translate( 0, verticalMargins / 2.0f );
 				canvas.DrawText(Source.absoluteLocation.ToUserPath(basePath), textPadding, paint.TextSize + textPadding, textPaint);
 				canvas.DrawLines(Source.output, paint);
+				textPaint.TextAlign= Paint.Align.Right;
+				canvas.DrawText(SizeDeltaString, canvas.Width-textPadding, canvas.Height-textPadding, textPaint);
+			}
+
+			private string SizeDeltaString
+			{
+				get {
+					long sizeDelta= Source.SizeDelta;
+					string prefix;
+					if ( sizeDelta < 0 )
+					{
+						sizeDelta= -sizeDelta;
+						prefix= "− ";
+					}
+					else prefix= "+ ";
+
+					return prefix + Formatter.FormatFileSize(Context, sizeDelta);
+				}
 			}
 		}
 

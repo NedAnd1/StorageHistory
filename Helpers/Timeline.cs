@@ -264,6 +264,8 @@ namespace StorageHistory.Helpers
 				output[ output.Length - 1 ]= output[ output.Length - 3 ]; // sets the last y-value
 			}
 
+			public int SizeDelta =>  sizes[ sizeCount - 1 ].Item2 - sizes[0].Item2 ;  // directories in the timeline always have at least one size
+
 			public override int GetHashCode() => absoluteLocation.GetHashCode();
 
 			public bool Equals(Directory other) => string.Equals( this.absoluteLocation, other.absoluteLocation );
