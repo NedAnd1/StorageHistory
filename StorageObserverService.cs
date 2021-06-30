@@ -90,7 +90,7 @@ namespace StorageHistory
 			try {
 				System.IO.Directory.CreateDirectory(path); // creates the directory if it doesn't already exist
 				@base.Add( new ObserverItem(path) );
-				foreach ( string subPath in System.IO.Directory.EnumerateDirectories(path, "*.*", SafeRecursiveMode) )
+				foreach ( string subPath in System.IO.Directory.EnumerateDirectories(path, "*", SafeRecursiveMode) )
 					@base.Add( new ObserverItem(subPath) );  // makes sure all sub-directories are monitored as well
 			}
 			catch ( Exception e ) {

@@ -262,7 +262,7 @@ namespace StorageHistory
 				absolutePath.WriteTo(unixFile); // appends the directory to the end of the file
 				
 				System.IO.Directory.CreateDirectory(absolutePath); // creates the directory if it doesn't already exist
-				OnFileChanges( System.IO.Directory.EnumerateFiles(absolutePath, "*.*", SafeRecursiveMode).ToFileChanges() );
+				OnFileChanges( System.IO.Directory.EnumerateFiles(absolutePath, "*", SafeRecursiveMode).ToFileChanges() );
 			}
 			
 			if ( unixFile != null )

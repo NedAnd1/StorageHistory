@@ -6,7 +6,6 @@ using static Android.Manifest;
 
 namespace StorageHistory.Helpers
 {
-	using static PathExtensions;
 
 	static class Configuration
 	{
@@ -94,7 +93,7 @@ namespace StorageHistory.Helpers
 				Permission.WriteExternalStorage
 			};
 
-		public static readonly System.IO.EnumerationOptions SafeRecursiveMode= new System.IO.EnumerationOptions { IgnoreInaccessible= true, RecurseSubdirectories= true };
+		public static readonly EnumerationOptions SafeRecursiveMode= new EnumerationOptions { IgnoreInaccessible= true, RecurseSubdirectories= true, AttributesToSkip= default /* enumerate hidden & system items */ };
 
 
 		public const int MaxStackAllocLength= 512 * 1024 / 8;
