@@ -1,14 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using Android.App;
-using Android.Content;
-using Android.OS;
-using Android.Runtime;
-using Android.Views;
-using Android.Widget;
 
 namespace StorageHistory.Helpers
 {
@@ -36,9 +27,9 @@ namespace StorageHistory.Helpers
 						if ( directory.parentLocation == null )
 						{
 							var parentDirectory= new Directory();
-							parentDirectory.absoluteLocation= directory.absoluteLocation;
-							parentDirectory.sizes= new (DateTime, int) [ snapshots.Count ];
-							parentDirectory.sizes[ snapshotIndex ]= ( currSnapshot.averageTime, directory.sizeDelta );
+							parentDirectory.AbsoluteLocation= directory.absoluteLocation;
+							parentDirectory.relativeSize= new (DateTime, int) [ snapshots.Count ];
+							parentDirectory.relativeSize[ snapshotIndex ]= ( currSnapshot.averageTime, directory.sizeDelta );
 							directories.Add(parentDirectory);
 							timelineParents.Add(directory.absoluteLocation);
 						}
@@ -60,23 +51,23 @@ namespace StorageHistory.Helpers
 							parentsToSkip.Add( snapshotChild.absoluteLocation );
 						else {
 							Directory existingDirectory; // a directory already in the set
-							unusedDirectory.absoluteLocation= snapshotChild.absoluteLocation;
+							unusedDirectory.AbsoluteLocation= snapshotChild.absoluteLocation;
 							if ( directories.TryGetValue( unusedDirectory, out existingDirectory ) )
-								existingDirectory.sizes[ snapshotIndex ]= ( currSnapshot.averageTime, snapshotChild.sizeDelta );
+								existingDirectory.relativeSize[ snapshotIndex ]= ( currSnapshot.averageTime, snapshotChild.sizeDelta );
 							else {
 								foreach ( var timelineDirectory in directories )
-									if ( snapshotChild.absoluteLocation.isChildOf( timelineDirectory.absoluteLocation ) )
+									if ( snapshotChild.absoluteLocation.isChildOf( timelineDirectory.AbsoluteLocation ) )
 									{
-										timelineDirectory.sizes[ snapshotIndex ].Item1= currSnapshot.averageTime;
-										timelineDirectory.sizes[ snapshotIndex ].Item2+= snapshotChild.sizeDelta;
+										timelineDirectory.relativeSize[ snapshotIndex ].Item1= currSnapshot.averageTime;
+										timelineDirectory.relativeSize[ snapshotIndex ].Item2+= snapshotChild.sizeDelta;
 										parentsToSkip.Add(snapshotChild.absoluteLocation);
 										goto ContinueParentAdditions;
 									}
-									else if ( timelineDirectory.absoluteLocation.isChildOf( snapshotChild.absoluteLocation ) )
+									else if ( timelineDirectory.AbsoluteLocation.isChildOf( snapshotChild.absoluteLocation ) )
 										goto ContinueParentAdditions;
 
-								unusedDirectory.sizes= new (DateTime, int) [ snapshotIndex + 1 ];
-								unusedDirectory.sizes[ snapshotIndex ]= ( currSnapshot.averageTime, snapshotChild.sizeDelta );
+								unusedDirectory.relativeSize= new (DateTime, int) [ snapshotIndex + 1 ];
+								unusedDirectory.relativeSize[ snapshotIndex ]= ( currSnapshot.averageTime, snapshotChild.sizeDelta );
 								directories.Add(unusedDirectory);
 								parentsToSkip.Add(snapshotChild.absoluteLocation);
 								unusedDirectory= new Directory();
@@ -122,9 +113,9 @@ namespace StorageHistory.Helpers
 						if ( directory.parentLocation == basePath )
 						{
 							var parentDirectory= new Directory();
-							parentDirectory.absoluteLocation= directory.absoluteLocation;
-							parentDirectory.sizes= new (DateTime, int) [ snapshots.Count ];
-							parentDirectory.sizes[ snapshotIndex ]= ( currSnapshot.averageTime, directory.sizeDelta );
+							parentDirectory.AbsoluteLocation= directory.absoluteLocation;
+							parentDirectory.relativeSize= new (DateTime, int) [ snapshots.Count ];
+							parentDirectory.relativeSize[ snapshotIndex ]= ( currSnapshot.averageTime, directory.sizeDelta );
 							directories.Add(parentDirectory);
 							timelineParents.Add(directory.absoluteLocation);
 						}
@@ -149,24 +140,24 @@ namespace StorageHistory.Helpers
 							parentsToSkip.Add( snapshotChild.absoluteLocation );
 						else {
 							Directory existingDirectory; // a directory already in the set
-							unusedDirectory.absoluteLocation= snapshotChild.absoluteLocation;
+							unusedDirectory.AbsoluteLocation= snapshotChild.absoluteLocation;
 							if ( directories.TryGetValue( unusedDirectory, out existingDirectory ) )
-								existingDirectory.sizes[ snapshotIndex ]= ( currSnapshot.averageTime, snapshotChild.sizeDelta );
+								existingDirectory.relativeSize[ snapshotIndex ]= ( currSnapshot.averageTime, snapshotChild.sizeDelta );
 							else if ( snapshotChild.absoluteLocation.isChildOf(basePath) )
 							{
 								foreach ( var timelineDirectory in directories )
-									if ( snapshotChild.absoluteLocation.isChildOf( timelineDirectory.absoluteLocation ) )
+									if ( snapshotChild.absoluteLocation.isChildOf( timelineDirectory.AbsoluteLocation ) )
 									{
-										timelineDirectory.sizes[ snapshotIndex ].Item1= currSnapshot.averageTime;
-										timelineDirectory.sizes[ snapshotIndex ].Item2+= snapshotChild.sizeDelta;
+										timelineDirectory.relativeSize[ snapshotIndex ].Item1= currSnapshot.averageTime;
+										timelineDirectory.relativeSize[ snapshotIndex ].Item2+= snapshotChild.sizeDelta;
 										parentsToSkip.Add(snapshotChild.absoluteLocation);
 										goto ContinueParentAdditions;
 									}
-									else if ( timelineDirectory.absoluteLocation.isChildOf( snapshotChild.absoluteLocation ) )
+									else if ( timelineDirectory.AbsoluteLocation.isChildOf( snapshotChild.absoluteLocation ) )
 										goto ContinueParentAdditions;
 
-								unusedDirectory.sizes= new (DateTime, int) [ snapshotIndex + 1 ];
-								unusedDirectory.sizes[ snapshotIndex ]= ( currSnapshot.averageTime, snapshotChild.sizeDelta );
+								unusedDirectory.relativeSize= new (DateTime, int) [ snapshotIndex + 1 ];
+								unusedDirectory.relativeSize[ snapshotIndex ]= ( currSnapshot.averageTime, snapshotChild.sizeDelta );
 								directories.Add(unusedDirectory);
 								parentsToSkip.Add(snapshotChild.absoluteLocation);
 								unusedDirectory= new Directory();
@@ -184,7 +175,7 @@ namespace StorageHistory.Helpers
 		}
 
 		/// <summary>
-		///  Calculates directory properties while normalizing their sizes across time (from delta values to absolute ones).
+		///  Calculates directory properties while accumulating their changes in size across time.
 		/// </summary>
 		private void normalizeDirectories()
 		{
@@ -192,23 +183,19 @@ namespace StorageHistory.Helpers
 			{
 				int j= 0,
 					currentSize= 0;
-				var sizeArray= timelineDirectory.sizes;
-				timelineDirectory.minSize= int.MaxValue;
+				var sizeArray= timelineDirectory.relativeSize;
 				for ( int i= 0; i < sizeArray.Length; ++i )
 					if ( sizeArray[i].Item1 != default(DateTime) ) // skips sizes without the required timestamp
 					{
 						sizeArray[j].Item1= sizeArray[i].Item1;
-						sizeArray[ j++ ].Item2= currentSize+= sizeArray[i].Item2; // sizes are now consecutive and absolute
+						sizeArray[ j++ ].Item2= currentSize+= sizeArray[i].Item2; // sizes are now cumulative
 
-						if ( currentSize < timelineDirectory.minSize )
-							timelineDirectory.minSize= currentSize;
-
-						if ( currentSize > timelineDirectory.maxSize )
-							timelineDirectory.maxSize= currentSize;
+						if ( currentSize > timelineDirectory.maxSizeDelta )
+							timelineDirectory.maxSizeDelta= currentSize;
 					}	
 					
 				timelineDirectory.sizeCount= j;
-				timelineDirectory.name= timelineDirectory.absoluteLocation.Substring( timelineDirectory.absoluteLocation.LastIndexOf('/') + 1 );
+				// timelineDirectory.name= timelineDirectory.AbsoluteLocation.Substring( timelineDirectory.AbsoluteLocation.LastIndexOf('/') + 1 );
 			}
 		}
 
@@ -216,13 +203,11 @@ namespace StorageHistory.Helpers
 
 		public class Directory: IEquatable<Directory>, IComparable<Directory>
 		{
-			public int minSize;
-			public int maxSize;
-			public string name;
-			public string absoluteLocation;
-			public (DateTime,int)[] sizes;
-			public int sizeCount;
-			public float[] output;
+			public string AbsoluteLocation;
+			public float[] Output;
+			internal (DateTime,int)[] relativeSize;
+			internal int sizeCount;
+			internal int maxSizeDelta;
 
 			/// <summary>
 			///  Generates the array of floats required for a draw to the canvas
@@ -230,60 +215,61 @@ namespace StorageHistory.Helpers
 			public void GenerateOutput(DateTime minTime, DateTime maxTime, int outputWidth, int outputHeight)
 			{
 				int sizeCount= 0;
-				if ( minSize != maxSize )
+				if ( maxSizeDelta != 0 )
 					sizeCount= this.sizeCount;
 
-				if (  output == null  ||  ( sizeCount + 1 ) * 4 != output.Length  )  // each line consists of 2 points (4 numbers)
-					output= new float [ ( sizeCount + 1 ) * 4 ];                      // 2 extra lines are drawn to ensure the given range // ( n-1 + 2 ) * 4
+				if (  Output == null  ||  ( sizeCount + 1 ) * 4 != Output.Length  )  // each line consists of 2 points (4 numbers)
+					Output= new float [ ( sizeCount + 1 ) * 4 ];                      // 2 extra lines are drawn to ensure the given range // ( n-1 + 2 ) * 4
 
-				output[ 0 ]= 0; // sets the first x-value  // the composite line starts here
-				output[ 1 ]= outputHeight * 0.5f; // sets the default y-value
+				Output[ 0 ]= 0; // sets the first x-value  // the composite line starts here
+				Output[ 1 ]= outputHeight * 0.5f; // sets the default y-value
 
-				if ( sizeCount > 1 )
+				if ( sizeCount > 0 )
 				{
+					Output[ 1 ]= outputHeight; // sets the first y-value
+
 					float xFactor= (float)outputWidth / ( maxTime.Ticks - minTime.Ticks ),
-					      yFactor= (float)outputHeight / ( maxSize - minSize );
+					      yFactor= (float)outputHeight / maxSizeDelta;
 
 					int i= 0;
-					for ( int j= 5;  j < output.Length; ++i, j+= 4 )
+					for ( int j= 5;  j < Output.Length; ++i, j+= 4 )
 					{
-						output[ j - 1 ]= ( sizes[i].Item1 - minTime ).Ticks * xFactor; // sets the x start-value
-						output[ j - 0 ]= ( maxSize - sizes[i].Item2 ) * yFactor; // sets the y start-value
+						Output[ j - 1 ]= ( relativeSize[i].Item1 - minTime ).Ticks * xFactor; // sets the x start-value
+						Output[ j - 0 ]= ( maxSizeDelta - relativeSize[i].Item2 ) * yFactor; // sets the y start-value
 					}
 
-					for ( int j= 5; j < output.Length; j+= 4 )  // copies the start-point of each line to the end-point of the previous line
+					for ( int j= 5; j < Output.Length; j+= 4 )  // copies the start-point of each line to the end-point of the previous line
 					{
-						output[ j - 3 ]= output[ j - 1 ]; // sets the x end-value
-						output[ j - 2 ]= output[ j - 0 ]; // sets the y end-value
+						Output[ j - 3 ]= Output[ j - 1 ]; // sets the x end-value
+						Output[ j - 2 ]= Output[ j - 0 ]; // sets the y end-value
 					}
 
-					output[ 1 ]= output[ 3 ]; // sets the first y-value
 				}
 
-				output[ output.Length - 2 ]= outputWidth; // sets the last x-value  // the composite line ends here
-				output[ output.Length - 1 ]= output[ output.Length - 3 ]; // sets the last y-value
+				Output[ Output.Length - 2 ]= outputWidth; // sets the last x-value  // the composite line ends here
+				Output[ Output.Length - 1 ]= Output[ Output.Length - 3 ]; // sets the last y-value
 			}
 
-			public int SizeDelta =>  sizes[ sizeCount - 1 ].Item2 - sizes[0].Item2 ;  // directories in the timeline always have at least one size
+			public int SizeDelta => relativeSize[ sizeCount - 1 ].Item2;  // directories in the timeline always have at least one size
 
-			public override int GetHashCode() => absoluteLocation.GetHashCode();
+			public override int GetHashCode() => AbsoluteLocation.GetHashCode();
 
-			public bool Equals(Directory other) => string.Equals( this.absoluteLocation, other.absoluteLocation );
+			public bool Equals(Directory other) => string.Equals( this.AbsoluteLocation, other.AbsoluteLocation );
 
 			public int CompareTo(Directory other) // used to sort this class
 			{
 				if ( other == null )
 					return -1; // non-null values first
 
-				if ( this.sizes != null && other.sizes != null )
+				if ( this.relativeSize != null && other.relativeSize != null )
 				{
-					int delta= ( this.sizes[this.sizeCount-1].Item2 - this.sizes[0].Item2 ) - ( other.sizes[other.sizeCount-1].Item2 - other.sizes[0].Item2 ) ;
+					int delta= this.relativeSize[this.sizeCount-1].Item2 - other.relativeSize[other.sizeCount-1].Item2;
 
 					if ( delta != 0 )
 						return -delta; // larger deltas first
 				}
 
-				return string.CompareOrdinal( this.absoluteLocation, other.absoluteLocation );
+				return string.CompareOrdinal( this.AbsoluteLocation, other.AbsoluteLocation );
 			}
 		}
 

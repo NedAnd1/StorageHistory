@@ -135,7 +135,7 @@ namespace StorageHistory
 			base.OnListItemClick(listView, itemView, itemIndex, itemId);
 			var adapter= ListAdapter as Adapter;
 			if ( adapter != null )
-				UpdateState( adapter[ itemIndex ].absoluteLocation, onlyUpdateIfNonEmpty: true );
+				UpdateState( adapter[ itemIndex ].AbsoluteLocation, onlyUpdateIfNonEmpty: true );
 		}
 
 		public bool UpdateState(string dirPath= null, bool onlyUpdateIfNonEmpty= false)
@@ -267,8 +267,8 @@ namespace StorageHistory
 				textPaint.TextAlign= Paint.Align.Left;
 				Source.GenerateOutput(minTime, maxTime, canvas.Width, canvas.Height-verticalMargins);
 				canvas.Translate( 0, verticalMargins / 2.0f );
-				canvas.DrawText(Source.absoluteLocation.ToUserPath(basePath), textPadding, paint.TextSize + textPadding, textPaint);
-				canvas.DrawLines(Source.output, paint);
+				canvas.DrawText(Source.AbsoluteLocation.ToUserPath(basePath), textPadding, paint.TextSize + textPadding, textPaint);
+				canvas.DrawLines(Source.Output, paint);
 				textPaint.TextAlign= Paint.Align.Right;
 				canvas.DrawText(SizeDeltaString, canvas.Width-textPadding, canvas.Height-textPadding, textPaint);
 			}
