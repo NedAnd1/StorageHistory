@@ -32,6 +32,7 @@ namespace StorageHistory
 
 			Items= new List<string>();
 			ListAdapter= new ArrayAdapter<string>(Context, Resource.Layout.backup_item);
+			( ListAdapter as ArrayAdapter<string> ).SetNotifyOnChange( false );  // `UpdateState` manually calls `NotifyDataSetChanged` after all changes
 
 			UpdateState( CurrentDirectory );
 

@@ -119,9 +119,8 @@ namespace StorageHistory.Helpers
 						dirKeyEnd= absolutePath.IndexOf('/', dirKeyStart);
 					if ( dirKeyEnd < 0 )
 						dirKeyEnd= absolutePath.Length;
-					string dirKey= absolutePath.Substring( dirKeyStart ,  dirKeyEnd - dirKeyStart ),
-					       dirName;
-					if ( sharedNames.TryGetValue(dirKey, out dirName) )  // concat the path's end to the matching alias
+					string dirKey= absolutePath.Substring( dirKeyStart ,  dirKeyEnd - dirKeyStart );
+					if ( sharedNames.TryGetValue(dirKey, out string dirName) )  // concat the path's end to the matching alias
 						return dirName.Concat( absolutePath.AsSpan().Slice(dirKeyEnd) ); // minimize the number of string copies
 
 					// look for an indirect child of shared storage that matches the given path
