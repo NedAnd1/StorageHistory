@@ -28,7 +28,7 @@ namespace StorageHistory.Helpers
 						{
 							var parentDirectory= new Directory();
 							parentDirectory.AbsoluteLocation= directory.absoluteLocation;
-							parentDirectory.relativeSize= new (DateTime, int) [ snapshots.Count ];
+							parentDirectory.relativeSize= new (DateTime, long) [ snapshots.Count ];
 							parentDirectory.relativeSize[ snapshotIndex ]= ( currSnapshot.averageTime, directory.sizeDelta );
 							directories.Add(parentDirectory);
 							timelineParents.Add(directory.absoluteLocation);
@@ -66,7 +66,7 @@ namespace StorageHistory.Helpers
 									else if ( timelineDirectory.AbsoluteLocation.isChildOf( snapshotChild.absoluteLocation ) )
 										goto ContinueParentAdditions;
 
-								unusedDirectory.relativeSize= new (DateTime, int) [ snapshotIndex + 1 ];
+								unusedDirectory.relativeSize= new (DateTime, long) [ snapshotIndex + 1 ];
 								unusedDirectory.relativeSize[ snapshotIndex ]= ( currSnapshot.averageTime, snapshotChild.sizeDelta );
 								directories.Add(unusedDirectory);
 								parentsToSkip.Add(snapshotChild.absoluteLocation);
@@ -114,7 +114,7 @@ namespace StorageHistory.Helpers
 						{
 							var parentDirectory= new Directory();
 							parentDirectory.AbsoluteLocation= directory.absoluteLocation;
-							parentDirectory.relativeSize= new (DateTime, int) [ snapshots.Count ];
+							parentDirectory.relativeSize= new (DateTime, long) [ snapshots.Count ];
 							parentDirectory.relativeSize[ snapshotIndex ]= ( currSnapshot.averageTime, directory.sizeDelta );
 							directories.Add(parentDirectory);
 							timelineParents.Add(directory.absoluteLocation);
@@ -156,7 +156,7 @@ namespace StorageHistory.Helpers
 									else if ( timelineDirectory.AbsoluteLocation.isChildOf( snapshotChild.absoluteLocation ) )
 										goto ContinueParentAdditions;
 
-								unusedDirectory.relativeSize= new (DateTime, int) [ snapshotIndex + 1 ];
+								unusedDirectory.relativeSize= new (DateTime, long) [ snapshotIndex + 1 ];
 								unusedDirectory.relativeSize[ snapshotIndex ]= ( currSnapshot.averageTime, snapshotChild.sizeDelta );
 								directories.Add(unusedDirectory);
 								parentsToSkip.Add(snapshotChild.absoluteLocation);
@@ -181,8 +181,8 @@ namespace StorageHistory.Helpers
 		{
 			foreach ( var timelineDirectory in directories )
 			{
-				int j= 0,
-					currentSize= 0;
+				int j= 0;
+				long currentSize= 0;
 				var sizeArray= timelineDirectory.relativeSize;
 				for ( int i= 0; i < sizeArray.Length; ++i )
 					if ( sizeArray[i].Item1 != default(DateTime) ) // skips sizes without the required timestamp
@@ -205,9 +205,9 @@ namespace StorageHistory.Helpers
 		{
 			public string AbsoluteLocation;
 			public float[] Output;
-			internal (DateTime,int)[] relativeSize;
+			internal (DateTime, long)[] relativeSize;
 			internal int sizeCount;
-			internal int maxSizeDelta;
+			internal long maxSizeDelta;
 
 			/// <summary>
 			///  Generates the array of floats required for a draw to the canvas
@@ -250,7 +250,7 @@ namespace StorageHistory.Helpers
 				Output[ Output.Length - 1 ]= Output[ Output.Length - 3 ]; // sets the last y-value
 			}
 
-			public int SizeDelta => relativeSize[ sizeCount - 1 ].Item2;  // directories in the timeline always have at least one size
+			public long SizeDelta => relativeSize[ sizeCount - 1 ].Item2;  // directories in the timeline always have at least one size
 
 			public override int GetHashCode() => AbsoluteLocation.GetHashCode();
 
@@ -263,10 +263,12 @@ namespace StorageHistory.Helpers
 
 				if ( this.relativeSize != null && other.relativeSize != null )
 				{
-					int delta= this.relativeSize[this.sizeCount-1].Item2 - other.relativeSize[other.sizeCount-1].Item2;
-
-					if ( delta != 0 )
-						return -delta; // larger deltas first
+					long a= this.relativeSize[this.sizeCount-1].Item2,
+					     b= other.relativeSize[other.sizeCount-1].Item2;
+					if ( a > b )
+						return -1; // larger deltas first
+					else if ( a < b )
+						return 1;
 				}
 
 				return string.CompareOrdinal( this.AbsoluteLocation, other.AbsoluteLocation );

@@ -10,15 +10,14 @@ namespace StorageHistory.Helpers
 	/// </summary>
 	struct DynamicSnapshot
 	{
-		public int sizeDelta;
+		public long sizeDelta;
 		public DateTime averageTime;
 		public Directory firstChild;
 
 		private uint totalChangeCount;
-		// private uint duplicateChangeCount;
 
 
-		public void AddDirectory(string location, int sizeDelta)
+		public void AddDirectory(string location, long sizeDelta)
 		{
 			if ( location[ location.Length - 1 ] == '/' )
 				location= location.Substring( 0, location.Length - 1 );
@@ -37,7 +36,7 @@ namespace StorageHistory.Helpers
 						if ( locationCompare == 0 )
 							currNode.sizeDelta+= sizeDelta;
 						else if ( lastNode == null )
-							firstChild= currNode= new Directory() { sizeDelta= sizeDelta, absoluteLocation= location, relativeLocation= location, nextNode= currNode };
+							firstChild= new Directory() { sizeDelta= sizeDelta, absoluteLocation= location, relativeLocation= location, nextNode= currNode };
 						else {
 							lastNode.nextNode= currNode= new Directory() {
 																			sizeDelta= sizeDelta,
@@ -59,7 +58,7 @@ namespace StorageHistory.Helpers
 					currNode= currNode.nextNode; // next node in linked-list
 					if ( currNode == null )
 					{
-						lastNode.nextNode= new Directory() { sizeDelta= sizeDelta, parent= lastParent, absoluteLocation= location, relativeLocation= location };
+						lastNode.nextNode= currNode= new Directory() { sizeDelta= sizeDelta, parent= lastParent, absoluteLocation= location, relativeLocation= location };
 						if ( lastParent != null )
 							currNode.relativeLocation= location.Substring(lastParent.absoluteLocation.Length+1);
 						break;
@@ -68,13 +67,13 @@ namespace StorageHistory.Helpers
 			}
 			
 			this.sizeDelta+= sizeDelta;
-			averageTime= averageTime.AddSeconds(  (double)( DateTime.UtcNow.Ticks - averageTime.Ticks ) / ( TimeSpan.TicksPerSecond * ++totalChangeCount ) );
+			averageTime= averageTime.AddTicks( ( DateTime.UtcNow.Ticks - averageTime.Ticks ) / ++totalChangeCount );  // formula for an unweighted moving average
 		}
 
 
 		public void WriteTo(string filePath)
 		{
-			var unixFile= Android.Systems.Os.Open(filePath, OsConstants.OWronly | OsConstants.OCreat | OsConstants.OAppend, DefaultFilePermissions);
+			var unixFile= Os.Open(filePath, OsConstants.OWronly | OsConstants.OCreat | OsConstants.OAppend, DefaultFilePermissions);
 
 			sizeDelta.ToString().WriteTo(unixFile);
 			totalChangeCount.ToString().WriteTo(unixFile);
@@ -87,35 +86,33 @@ namespace StorageHistory.Helpers
 			directoryCount.ToString().WriteTo(unixFile);
 
 			// write each directory property sequentially
-			for ( Directory node= firstChild; node != null; node= node.nextNode ) {
-
+			for ( Directory node= firstChild; node != null; node= node.nextNode )
+			{
 				if ( node.parent != null )
 					node.parent.index.ToString().WriteTo(unixFile);
 				else "0".WriteTo(unixFile);
 				
-				System.Diagnostics.Debug.Assert( node.relativeLocation.Length > 0 ); // `relativeLocation` must NOT be empty
-				node.relativeLocation.WriteTo(unixFile);
+				if ( node.relativeLocation.Length > 0 )
+					node.relativeLocation.WriteTo(unixFile);
+				else "/".WriteTo(unixFile); // replace empty string
 
 				node.sizeDelta.ToString().WriteTo(unixFile);
-
 			}
 
 			'\0'.WriteTo(unixFile); // makes sure the snapshot is terminated
 
-			Android.Systems.Os.Close(unixFile); // release the handle
+			Os.Close(unixFile); // release the handle
 		}
 
 
 
-		public static implicit operator bool(DynamicSnapshot @this) {
-			return  @this.sizeDelta != 0  &&  @this.firstChild != null ;
-		}
+		public static implicit operator bool(DynamicSnapshot @this)
+			=>  @this.sizeDelta != 0  &&  @this.firstChild != null ;
 
 
 		public class Directory {
 			public int index; // 1-based index of node in linked list
-			public int sizeDelta;
-			// public uint childCount;
+			public long sizeDelta;
 			public Directory parent;
 			public Directory nextNode;
 			public string absoluteLocation; // used for comparing directories while creating the snapshot

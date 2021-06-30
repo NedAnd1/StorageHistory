@@ -7,7 +7,6 @@ using System.IO.Compression;
 
 namespace StorageHistory
 {
-	using System.Collections;
 	using Helpers;
 	using static Helpers.Configuration;
 
@@ -83,18 +82,18 @@ namespace StorageHistory
 			location= System.IO.Path.GetFullPath(location); // need absolute file path
 
 			if ( fileExclusions == null ) {
-				var unixFile= Android.Systems.Os.Open(ExclusionList_FILE, OsConstants.ORdonly | OsConstants.OCreat,  DefaultFilePermissions);
+				var unixFile= Os.Open(ExclusionList_FILE, OsConstants.ORdonly | OsConstants.OCreat,  DefaultFilePermissions);
 				fileExclusions= unixFile.GetStrings(); // reads file into memory
-				Android.Systems.Os.Close(unixFile); // no longer needed
+				Os.Close(unixFile); // no longer needed
 			}
 				
 			if ( ! fileExclusions.Contains(location) ) // changed file is not in exclude-list
 			{
 
 				if ( Preferences.Get(EnableStatistics_KEY, EnableStatistics_DEFAULT) ) {
-					var unixFile= Android.Systems.Os.Open(SizeDictionary_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
+					var unixFile= Os.Open(SizeDictionary_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
 					updateStatistics(location, sizeDictionaryFile: unixFile);
-					Android.Systems.Os.Close(unixFile); // no longer needed
+					Os.Close(unixFile); // no longer needed
 				}
 
 				if ( Preferences.Get(EnableBackup_KEY, EnableBackup_DEFAULT) && fileChange != FileChangeType.Deletion )
@@ -120,13 +119,13 @@ namespace StorageHistory
 				FileDescriptor sizeDictionaryFile= null;
 
 				if ( fileExclusions == null ) {
-					var unixFile= Android.Systems.Os.Open(ExclusionList_FILE, OsConstants.ORdonly | OsConstants.OCreat,  DefaultFilePermissions);
+					var unixFile= Os.Open(ExclusionList_FILE, OsConstants.ORdonly | OsConstants.OCreat,  DefaultFilePermissions);
 					fileExclusions= unixFile.GetStrings(); // reads file into memory
-					Android.Systems.Os.Close(unixFile); // no longer needed
+					Os.Close(unixFile); // no longer needed
 				}
 
 				if ( enableStatistics )
-					sizeDictionaryFile= Android.Systems.Os.Open(SizeDictionary_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
+					sizeDictionaryFile= Os.Open(SizeDictionary_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
 
 				foreach ( FileChange fileChange in changes )
 					if ( ! fileExclusions.Contains(fileChange.AbsoluteLocation) ) // changed file is not in exclude-list
@@ -139,7 +138,7 @@ namespace StorageHistory
 					}
 
 				if ( sizeDictionaryFile != null )
-					Android.Systems.Os.Close(sizeDictionaryFile);  // release the handle
+					Os.Close(sizeDictionaryFile);  // release the handle
 
 			}
 		}
@@ -168,7 +167,7 @@ namespace StorageHistory
 							{
 								string backupDir= backupFilePath.Substring(0, nextSlashIndex); 
 								try {
-									Android.Systems.Os.Mkdir(backupDir, DefaultDirectoryPermissions );
+									Os.Mkdir(backupDir, DefaultDirectoryPermissions );
 								} catch ( System.Exception e ) {
 									var x= e;
 								}
@@ -184,7 +183,7 @@ namespace StorageHistory
 									if ( ! skipExisting || zipArchive.Entries.Count == 0 )
 										zipArchive.CreateEntryFromFile( filePath, backupFileVersion );
 						} catch ( System.IO.InvalidDataException ) {
-							Android.Systems.Os.Rename(backupFilePath, backupFilePath+backupFileVersion); // backup the invalid backup
+							Os.Rename(backupFilePath, backupFilePath+backupFileVersion); // backup the invalid backup
 							using ( var fileStream= new System.IO.FileStream(backupFilePath, System.IO.FileMode.Create) )
 								using ( var zipArchive= new ZipArchive(fileStream, ZipArchiveMode.Create) )
 									zipArchive.CreateEntryFromFile( filePath, backupFileVersion );
@@ -201,19 +200,19 @@ namespace StorageHistory
 		/// <param name="filePath"> The absolute path of the file to update. </param>
 		private static void updateStatistics(string filePath, FileDescriptor sizeDictionaryFile)
 		{
-			int fileSizeDelta;
-			long oldSizeOffset;
+			long fileSizeDelta,
+			     oldSizeOffset;
 
 			var oldSizeStr= sizeDictionaryFile.ReadDictionaryEntry(filePath, out oldSizeOffset);
-			int.TryParse(oldSizeStr, out fileSizeDelta); // reads the file's old size from the size dictionary as an integer
+			long.TryParse(oldSizeStr, out fileSizeDelta); // reads the file's old size from the size dictionary as an integer
 
 			#region Retrieve New File Size With System Call To Linux Kernel
 
 				string newFileSizeStr= "0";
 				try {
-					var newFileSize= Android.Systems.Os.Lstat(filePath).StSize;
+					long newFileSize= Os.Lstat(filePath).StSize;
 					newFileSizeStr= newFileSize.ToString();
-					fileSizeDelta= (int)( newFileSize - fileSizeDelta );
+					fileSizeDelta= newFileSize - fileSizeDelta;
 				}
 				catch ( System.Exception ) {
 					fileSizeDelta= -fileSizeDelta;  // file lost all of its former size
@@ -251,14 +250,14 @@ namespace StorageHistory
 			FileDescriptor unixFile= null;
 
 			if ( directoryInclusions == null ) {
-				unixFile= Android.Systems.Os.Open(DirectoryInclusionList_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
+				unixFile= Os.Open(DirectoryInclusionList_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
 				directoryInclusions= unixFile.GetStrings(); // reads the entire file such that the read/write offset should now be EOF
 			}
 
 			if ( directoryInclusions.Add(absolutePath) ) // directory wasn't in the collection
 			{
 				if ( unixFile == null )
-					unixFile= Android.Systems.Os.Open(DirectoryInclusionList_FILE, OsConstants.OWronly | OsConstants.OCreat | OsConstants.OAppend,  DefaultFilePermissions);
+					unixFile= Os.Open(DirectoryInclusionList_FILE, OsConstants.OWronly | OsConstants.OCreat | OsConstants.OAppend,  DefaultFilePermissions);
 				
 				absolutePath.WriteTo(unixFile); // appends the directory to the end of the file
 				
@@ -267,7 +266,7 @@ namespace StorageHistory
 			}
 			
 			if ( unixFile != null )
-				Android.Systems.Os.Close(unixFile); // file no longer needed
+				Os.Close(unixFile); // file no longer needed
 		}
 
 		/// <summary>
@@ -279,21 +278,21 @@ namespace StorageHistory
 			FileDescriptor unixFile= null;
 
 			if ( directoryInclusions == null ) {
-				unixFile= Android.Systems.Os.Open(DirectoryInclusionList_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
+				unixFile= Os.Open(DirectoryInclusionList_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
 				directoryInclusions= unixFile.GetStrings(); // reads the entire file such that the read/write offset should now be EOF
 			}
 
 			if ( directoryInclusions.Remove(absolutePath) ) // directory was in the collection
 			{
 				if ( unixFile == null )
-					unixFile= Android.Systems.Os.Open(DirectoryInclusionList_FILE, OsConstants.OWronly | OsConstants.OCreat,  DefaultFilePermissions);
-				else Android.Systems.Os.Lseek(unixFile, 0, OsConstants.SeekSet);
+					unixFile= Os.Open(DirectoryInclusionList_FILE, OsConstants.OWronly | OsConstants.OCreat,  DefaultFilePermissions);
+				else Os.Lseek(unixFile, 0, OsConstants.SeekSet);
 				
 				directoryInclusions.WriteTo(unixFile); // rewrites the collection of directories to the list file
 			}
 			
 			if ( unixFile != null )
-				Android.Systems.Os.Close(unixFile); // file no longer needed
+				Os.Close(unixFile); // file no longer needed
 
 		}
 
@@ -305,9 +304,9 @@ namespace StorageHistory
 		{
 			if ( directoryInclusions == null ) // if the inclusions file hasn't already been read into memory
 			{
-				var unixFile= Android.Systems.Os.Open(DirectoryInclusionList_FILE, OsConstants.ORdonly | OsConstants.OCreat,  DefaultFilePermissions);
+				var unixFile= Os.Open(DirectoryInclusionList_FILE, OsConstants.ORdonly | OsConstants.OCreat,  DefaultFilePermissions);
 				directoryInclusions= unixFile.GetStrings(); // reads the entire file as a set of strings
-				Android.Systems.Os.Close(unixFile); // file no longer needed
+				Os.Close(unixFile); // file no longer needed
 			}
 			return new HashSet<string> ( directoryInclusions ); // create a copy for the outside world; don't allow direct access
 		}
@@ -323,7 +322,7 @@ namespace StorageHistory
 			FileDescriptor unixFile= null;
 
 			if ( fileExclusions == null ) {
-				unixFile= Android.Systems.Os.Open(ExclusionList_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
+				unixFile= Os.Open(ExclusionList_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
 				fileExclusions= unixFile.GetStrings(); // reads the entire file such that the read/write offset should now be EOF
 			}
 
@@ -331,14 +330,14 @@ namespace StorageHistory
 			{
 
 				if ( unixFile == null )
-					unixFile= Android.Systems.Os.Open(ExclusionList_FILE, OsConstants.OWronly | OsConstants.OCreat | OsConstants.OAppend,  DefaultFilePermissions);
+					unixFile= Os.Open(ExclusionList_FILE, OsConstants.OWronly | OsConstants.OCreat | OsConstants.OAppend,  DefaultFilePermissions);
 				
 				absolutePath.WriteTo(unixFile); // appends the filepath to the end of the file
 
 			}
 			
 			if ( unixFile != null )
-				Android.Systems.Os.Close(unixFile); // file no longer needed
+				Os.Close(unixFile); // file no longer needed
 
 		}
 

@@ -18,7 +18,7 @@ namespace StorageHistory
 		private static DynamicSnapshot latestSnapshot;
 		private static List<Snapshot> snapshotsCache; // potentially large object which should only exist in memory when the app is retrieving snapshots for analysis
 
-		public static void AddDirectory(string location, int sizeDelta)
+		public static void AddDirectory(string location, long sizeDelta)
 		{
 			if ( DateTime.UtcNow >= nextSnapshotStartTime  )
 			{
@@ -75,7 +75,7 @@ namespace StorageHistory
 				var currSnapshot= new Snapshot();
 
 				newString= snapshotsFile.ReadString();
-				if ( newString == null || ! int.TryParse(newString, out currSnapshot.sizeDelta ) )
+				if ( newString == null || ! long.TryParse(newString, out currSnapshot.sizeDelta ) )
 					break;
 
 				newString= snapshotsFile.ReadString();
@@ -115,7 +115,7 @@ namespace StorageHistory
 					absolutePaths[ currIndex ]= currDirectory.absoluteLocation.AsSpan();
 
 					newString= snapshotsFile.ReadString();
-					if ( newString == null || ! int.TryParse(newString, out currDirectory.sizeDelta) )
+					if ( newString == null || ! long.TryParse(newString, out currDirectory.sizeDelta) )
 						break;
 
 					currSnapshot.children.Add(currDirectory);

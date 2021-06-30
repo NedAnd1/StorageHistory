@@ -9,7 +9,7 @@ namespace StorageHistory.Helpers
 	/// </summary>
 	struct Snapshot
 	{
-		public int sizeDelta;
+		public long sizeDelta;
 		public uint changeCount;
 		public DateTime averageTime;
 		public HashSet<Directory> children;
@@ -71,7 +71,7 @@ namespace StorageHistory.Helpers
 
 		public struct Directory: IEquatable<Directory> {
 
-			public int sizeDelta;
+			public long sizeDelta;
 			public string parentLocation;
 			public string absoluteLocation;
 
