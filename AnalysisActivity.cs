@@ -131,7 +131,9 @@ namespace StorageHistory
 		public void OnHeaderClick(object o, EventArgs e)
 		{
 			if ( CurrentDirectory != null )
-				UpdateState( System.IO.Path.GetFullPath("..", CurrentDirectory) );
+				if ( header == null || header.Text.IndexOf('/', 1) > 0 )  // if the current directory is neither special nor a direct child of the root
+					UpdateState(  CurrentDirectory.Substring( 0, CurrentDirectory.LastIndexOf('/') )  ); // go up to the current directory's parent
+				else UpdateState(); // go up to the root
 		}
 
 		public void OnTimeSelection(object o, AdapterView.ItemSelectedEventArgs itemArgs)
@@ -271,6 +273,16 @@ namespace StorageHistory
 			public DateTime maxTime;
 			public Timeline.Directory Source;
 
+			private static readonly Paint AxisPaint= new Paint(PaintFlags.AntiAlias) { Color= Color.LightGray };
+			private static void initAxis(Context context)
+			{
+				float density= context.Resources.DisplayMetrics.Density,
+				      dashLength= 8f * density;
+				AxisPaint.SetPathEffect(  new DashPathEffect( new float[]{ dashLength, dashLength }, dashLength )  ) ;
+				AxisPaint.SetStyle(Paint.Style.Stroke);
+				AxisPaint.StrokeWidth= density;
+			}
+
 			public Color Color { set { paint.Color= value; textPaint.Color= value; } }
 
 			public ItemView(Context context): base(context)
@@ -280,16 +292,33 @@ namespace StorageHistory
 				textPadding= Resources.GetDimension(Resource.Dimension.analysis_item_text_padding);
 				verticalMargins= Resources.GetDimensionPixelSize(Resource.Dimension.analysis_item_vertical_margins);
 				LayoutParameters= new LayoutParams( LayoutParams.MatchParent, Resources.GetDimensionPixelSize(Resource.Dimension.analysis_item_height) + verticalMargins );
-				paint.StrokeWidth*= 2;
+				if ( AxisPaint.PathEffect == null )
+					initAxis(context);
 			}
 
 			protected override void OnDraw(Canvas canvas)
 			{
-				textPaint.TextAlign= Paint.Align.Left;
+				// generate the graph of size changes
 				Source.GenerateOutput(minTime, maxTime, canvas.Width, canvas.Height-verticalMargins);
 				canvas.Translate( 0, verticalMargins / 2.0f );
-				canvas.DrawText(Source.AbsoluteLocation.ToUserPath(basePath), textPadding, paint.TextSize + textPadding, textPaint);
+
+				// draw the dashed line that represents the x-axis i.e. no change in size
+				if ( (int)Source.AxisHeight + 1 < canvas.Height )  // if it's above the bottom of the graph
+				{
+					var axisPath= new Path();
+					axisPath.MoveTo(0, Source.AxisHeight);
+					axisPath.LineTo(canvas.Width, Source.AxisHeight);
+					canvas.DrawPath(axisPath, AxisPaint);
+				}
+
+				// draw the graph of size changes
 				canvas.DrawLines(Source.Output, paint);
+
+				// write the name of the directory
+				textPaint.TextAlign= Paint.Align.Left;
+				canvas.DrawText(Source.AbsoluteLocation.ToUserPath(basePath), textPadding, paint.TextSize + textPadding, textPaint);
+
+				// write the amount of the directory's change in size
 				textPaint.TextAlign= Paint.Align.Right;
 				canvas.DrawText(SizeDeltaString, canvas.Width-textPadding, canvas.Height-textPadding, textPaint);
 			}

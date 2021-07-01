@@ -192,6 +192,9 @@ namespace StorageHistory.Helpers
 
 						if ( currentSize > timelineDirectory.maxSizeDelta )
 							timelineDirectory.maxSizeDelta= currentSize;
+
+						if ( currentSize < timelineDirectory.minSizeDelta )
+							timelineDirectory.minSizeDelta= currentSize;
 					}	
 					
 				timelineDirectory.sizeCount= j;
@@ -205,9 +208,11 @@ namespace StorageHistory.Helpers
 		{
 			public string AbsoluteLocation;
 			public float[] Output;
+			public float AxisHeight => Output[1];
 			internal (DateTime, long)[] relativeSize;
 			internal int sizeCount;
 			internal long maxSizeDelta;
+			internal long minSizeDelta;
 
 			/// <summary>
 			///  Generates the array of floats required for a draw to the canvas
@@ -215,7 +220,7 @@ namespace StorageHistory.Helpers
 			public void GenerateOutput(DateTime minTime, DateTime maxTime, int outputWidth, int outputHeight)
 			{
 				int sizeCount= 0;
-				if ( maxSizeDelta != 0 )
+				if ( maxSizeDelta != minSizeDelta )
 					sizeCount= this.sizeCount;
 
 				if (  Output == null  ||  ( sizeCount + 1 ) * 4 != Output.Length  )  // each line consists of 2 points (4 numbers)
@@ -226,10 +231,10 @@ namespace StorageHistory.Helpers
 
 				if ( sizeCount > 0 )
 				{
-					Output[ 1 ]= outputHeight; // sets the first y-value
-
 					float xFactor= (float)outputWidth / ( maxTime.Ticks - minTime.Ticks ),
-					      yFactor= (float)outputHeight / maxSizeDelta;
+					      yFactor= (float)outputHeight / ( maxSizeDelta - minSizeDelta );
+
+					Output[ 1 ]= ( maxSizeDelta - 0 ) * yFactor; // sets the first y-value (relative size starts out as 0)
 
 					int i= 0;
 					for ( int j= 5;  j < Output.Length; ++i, j+= 4 )
