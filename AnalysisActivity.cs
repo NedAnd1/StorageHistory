@@ -8,6 +8,7 @@ using Android.Runtime;
 using Android.Widget;
 using Android.Text.Format;
 using AndroidX.Fragment.App;
+using AndroidX.SwipeRefreshLayout.Widget;
 using Xamarin.Essentials;
 using System.Collections.Generic;
 
@@ -21,7 +22,7 @@ namespace StorageHistory
 	using static Helpers.Configuration;
 
 
-	public class AnalysisActivity: ListFragment
+	public class AnalysisActivity: ListFragment, SwipeRefreshLayout.IOnRefreshListener
 	{
 		const int HoursPerDay= 24;
 
@@ -46,6 +47,9 @@ namespace StorageHistory
 		public TimeSpan CurrentDuration;
 		TextView header;
 		Spinner timeSelector;
+		SwipeRefreshLayout mainRefresher;
+		SwipeRefreshLayout emptyRefresher;
+
 			
 		public override View OnCreateView(LayoutInflater inflater, ViewGroup mainView, Bundle savedInstanceState)
 			=> inflater.Inflate(Resource.Layout.activity_analysis, mainView, false) ;
@@ -64,11 +68,11 @@ namespace StorageHistory
 			int lastNumberOfHours= Preferences.Get(AnalysisDuration_KEY, AnalysisDuration_DEFAULT);
 			CurrentDuration= TimeSpan.FromTicks( TimeSpan.TicksPerHour * lastNumberOfHours );
 
-			header= view.FindViewById<TextView>( Resource.Id.analysis_header );
+			header= view.FindViewById( Resource.Id.analysis_header ) as TextView;
 			if ( header != null )
 				header.Click+= OnHeaderClick;
 
-			timeSelector= view.FindViewById<Spinner>( Resource.Id.analysis_time_selector );
+			timeSelector= view.FindViewById( Resource.Id.analysis_time_selector ) as Spinner;
 			if ( timeSelector != null )
 			{
 				var durationStrings= this.retrieveDurationStrings(lastNumberOfHours, out int lastSelectionIndex); // the user-facing counterpart to DurationOptions
@@ -78,6 +82,14 @@ namespace StorageHistory
 				timeSelector.SetSelection( lastSelectionIndex, animate: false );
 				timeSelector.ItemSelected+= OnTimeSelection;
 			}
+
+			mainRefresher= view.FindViewById( Resource.Id.analysis_refresher ) as SwipeRefreshLayout;
+			if ( mainRefresher != null )
+				mainRefresher.SetOnRefreshListener(this);
+
+			emptyRefresher= view.FindViewById( Android.Resource.Id.Empty ) as SwipeRefreshLayout;
+			if ( emptyRefresher != null )
+				emptyRefresher.SetOnRefreshListener(this);
 
 			ListAdapter= new Adapter ( Context );
 			UpdateState( CurrentDirectory );
@@ -138,13 +150,22 @@ namespace StorageHistory
 				UpdateState( adapter[ itemIndex ].AbsoluteLocation, onlyUpdateIfNonEmpty: true );
 		}
 
-		public bool UpdateState(string dirPath= null, bool onlyUpdateIfNonEmpty= false)
+		public void OnRefresh()
+		{
+			UpdateState( CurrentDirectory, refreshData: true );
+			if ( mainRefresher != null )
+				mainRefresher.Refreshing= false;
+			if ( emptyRefresher != null )
+				emptyRefresher.Refreshing= false;
+		}
+
+		public bool UpdateState(string dirPath= null, bool onlyUpdateIfNonEmpty= false, bool refreshData= false)
 		{
 			DateTime startTime= default;
 			if ( CurrentDuration != TimeSpan.Zero )
 				startTime= DateTime.Now - CurrentDuration;
 
-			var newTimeline= StatisticsManager.RetrieveTimeline( dirPath, startTime ); // ToDo: add startTime based on UI switch between 30 days, 60 days etc.
+			var newTimeline= StatisticsManager.RetrieveTimeline( dirPath, startTime, refreshData );
 
 			if ( onlyUpdateIfNonEmpty && newTimeline.IsEmpty )
 				return false;

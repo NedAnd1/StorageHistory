@@ -51,9 +51,9 @@ namespace StorageHistory
 			return new Snapshot(matches); // returns a profile of the matches
 		}
 
-		public static Timeline RetrieveTimeline(string basePath= null, DateTime startTime= default)
+		public static Timeline RetrieveTimeline(string basePath= null, DateTime startTime= default, bool refreshCache= false)
 		{
-			if ( snapshotsCache == null )
+			if ( snapshotsCache == null || refreshCache )
 				initializeCache();
 
 			if ( snapshotsCache.Count > 0 )
