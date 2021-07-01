@@ -76,10 +76,8 @@ namespace StorageHistory
 		/// <remarks>
 		///  This method assumes it's only called for user-selected directories.
 		/// </remarks>
-		public static void OnFileChange(string location, FileChangeType fileChange)
+		public static void OnFileChange(string absoluteLocation, FileChangeType fileChange)
 		{
-
-			location= System.IO.Path.GetFullPath(location); // need absolute file path
 
 			if ( fileExclusions == null ) {
 				var unixFile= Os.Open(ExclusionList_FILE, OsConstants.ORdonly | OsConstants.OCreat,  DefaultFilePermissions);
@@ -87,17 +85,17 @@ namespace StorageHistory
 				Os.Close(unixFile); // no longer needed
 			}
 				
-			if ( ! fileExclusions.Contains(location) ) // changed file is not in exclude-list
+			if ( ! fileExclusions.Contains(absoluteLocation) ) // changed file is not in exclude-list
 			{
 
 				if ( Preferences.Get(EnableStatistics_KEY, EnableStatistics_DEFAULT) ) {
 					var unixFile= Os.Open(SizeDictionary_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
-					updateStatistics(location, sizeDictionaryFile: unixFile);
+					updateStatistics(absoluteLocation, sizeDictionaryFile: unixFile);
 					Os.Close(unixFile); // no longer needed
 				}
 
 				if ( Preferences.Get(EnableBackup_KEY, EnableBackup_DEFAULT) && fileChange != FileChangeType.Deletion )
-					updateBackupCache(location, skipExisting: fileChange == FileChangeType.None);
+					updateBackupCache(absoluteLocation, skipExisting: fileChange == FileChangeType.None);
 
 			}
 

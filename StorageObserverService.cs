@@ -85,10 +85,15 @@ namespace StorageHistory
 		/// <summary>
 		///  Recursively monitors subdirectories so the service works correctly.
 		/// </summary>
-		private static void monitorDirectory(string path)
+		private static void monitorDirectory(string path, bool isChild= false)
 		{
 			try {
-				System.IO.Directory.CreateDirectory(path); // creates the directory if it doesn't already exist
+				if ( isChild )
+				{
+					if ( ! System.IO.Directory.Exists(path) )
+						return ; // if the child isn't a directory we have access to
+				}
+				else System.IO.Directory.CreateDirectory(path); // creates the directory if it doesn't already exist
 				@base.Add( new ObserverItem(path) );
 				foreach ( string subPath in System.IO.Directory.EnumerateDirectories(path, "*", SafeRecursiveMode) )
 					@base.Add( new ObserverItem(subPath) );  // makes sure all sub-directories are monitored as well
@@ -126,21 +131,34 @@ namespace StorageHistory
 		/// </summary>
 		public class ObserverItem : FileObserver
 		{
+			private string basePath;
+
 			public ObserverItem(string path)
 				: base( new File(path).CanonicalPath, eventsFilter ) // FileObserver requires the canonical or non-symbolic path to the directory 
-				=> base.StartWatching();
+			{
+				basePath= path + '/';
+				base.StartWatching();
+			}
 
 			~ObserverItem() => base.StopWatching();
 
 			public override void OnEvent(FileObserverEvents e, string path)
 			{
+				if ( string.IsNullOrEmpty(path) || path[0] != '/' )
+					path= basePath + path;  // turn relative paths into absolute paths
+				else if ( ! path.StartsWith(basePath) )
+				{
+					Debug.WriteLine($"Warning: Observer {e} event for `{path}` wasn't in `{basePath}`.");
+					path= basePath.Concat(  path.AsSpan().Slice( path.LastIndexOf('/') + 1 )  );
+				}
+
 				switch ( e )
 				{
 					case FileObserverEvents.MovedTo:
 					case FileObserverEvents.Create:
 						if ( path.IsFile() )
 							Synchronizer.OnFileChange(path, FileChangeType.Creation);
-						else monitorDirectory(path); // recursively monitors the new sub-directory
+						else monitorDirectory( path, isChild: true ); // recursively monitors the new sub-directory
 						break;
 					case FileObserverEvents.Modify:
 						Synchronizer.OnFileChange(path, FileChangeType.Modification);
@@ -151,23 +169,24 @@ namespace StorageHistory
 						break;
 					case FileObserverEvents.MoveSelf:
 						foreach ( string parent in directories )
-							if ( path.IsChildOf(parent) )
+							if ( basePath.IsChildOf(parent) )
 								return ;  // no need to update observers
 						updateObservers();
 						break;
 					// ToDo: better move support?
 				}
+
 			}
-
-
 		}
+
 	}
 
 
 	/// <summary>
 	///  Receives device startup, storage, and shutdown notifications.
 	/// </summary>
-	public class IntentListener: BroadcastReceiver {
+	public class IntentListener: BroadcastReceiver
+	{
 		public override void OnReceive(Context context, Intent intent)
 		{
 			switch ( intent.Action )
@@ -186,6 +205,6 @@ namespace StorageHistory
 					break;
 			}
 		}
-		
 	}
+
 }
