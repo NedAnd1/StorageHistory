@@ -6,4 +6,5 @@
 	<color name="colorTertiary">#d6dfe8</color>
 	<color name="colorTertiaryDark">#b6bfc8</color>
 	<color name="colorTertiaryDarker">#9caec0</color>
+	<color name="launcherIconBackground">#3498db</color>
 </resources>
