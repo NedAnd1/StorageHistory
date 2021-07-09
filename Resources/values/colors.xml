@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<color name="colorPrimary">#2c3e50</color>
-	<color name="colorPrimaryDark">#1B3147</color>
-	<color name="colorAccent">#3498db</color>
-	<color name="colorTertiary">#d6dfe8</color>
+	<color name="colorPrimaryDark">#202f3a</color>
+	<color name="colorAccent">#72bad9</color>
+	<color name="colorTertiary">#d6e1e8</color>
 	<color name="colorTertiaryDark">#b6bfc8</color>
 	<color name="colorTertiaryDarker">#9caec0</color>
-	<color name="launcherIconBackground">#3498db</color>
+	<color name="launcherIconBackground">#2c88b8</color>
 </resources>
