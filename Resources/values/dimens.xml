@@ -6,4 +6,5 @@
 	<dimen name="analysis_item_height">64dp</dimen>
 	<dimen name="analysis_item_text_padding">8dp</dimen>
 	<dimen name="analysis_item_vertical_margins">0dp</dimen>
+	<dimen name="splash_logo_length">320dp</dimen>
 </resources>
