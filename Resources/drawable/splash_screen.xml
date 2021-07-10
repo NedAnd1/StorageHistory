@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
 	<item>
-		<color android:color="@color/colorPrimary" />
+		<color android:color="@color/storage_blue" />
 	</item>
 	<item android:drawable="@drawable/splash_logo" android:width="@dimen/splash_logo_length" android:height="@dimen/splash_logo_length" android:gravity="center" />
 </layer-list>

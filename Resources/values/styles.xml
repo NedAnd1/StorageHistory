@@ -2,14 +2,33 @@
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.DarkActionBar">
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+        <item name="colorPrimary">@color/storage_blue</item>
+        <item name="colorPrimaryDark">@color/dark_blue</item>
+        <item name="colorAccent">@color/baby_blue</item>
+		<item name="android:colorBackground">@color/main_background</item>
+		<item name="android:spinnerItemStyle">@style/SpinnerItem</item>
+		<item name="android:spinnerDropDownItemStyle">@style/SpinnerDropDownItem</item>
 		<item name="android:windowSplashscreenContent">@drawable/splash_screen</item>
     </style>
 	
 	<style name="NavTheme" parent="AppTheme">
-		<item name="android:colorBackground">@color/colorTertiary</item>
+		<item name="android:colorBackground">@color/light_blue</item>
     </style>
-
+	
+	<style name="Foreground" parent="AppTheme">
+		<item name="android:textColor">@color/foreground_text</item>
+		<item name="android:textColorSecondary">@color/foreground_text</item>>
+	</style>
+	
+	<style name="SpinnerItem">
+		<item name="android:textAppearance">@style/Foreground</item>
+		<item name="android:textSize">14sp</item>
+		<item name="android:paddingLeft">8dp</item>
+		<item name="android:paddingRight">0dp</item>
+	</style>
+	<style name="SpinnerDropDownItem" parent="SpinnerItem">
+		<item name="android:paddingRight">8dp</item>
+		<item name="android:gravity">center_vertical</item>
+	</style>
+	
 </resources>

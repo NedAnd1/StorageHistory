@@ -2,7 +2,7 @@
 
 	<style name="NavTheme">
  		<item name="colorPrimary">#BEEFFF</item>
-		<item name="android:colorBackground">@color/colorPrimary</item>
+		<item name="android:colorBackground">@color/storage_blue</item>
    </style>
 
 </resources>
