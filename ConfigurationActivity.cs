@@ -8,13 +8,12 @@ using Xamarin.Essentials;
 using AndroidX.Fragment.App;
 using System.Collections.Generic;
 
-using ListFragment= AndroidX.Fragment.App.ListFragment;
-
 namespace StorageHistory
 {
+	using Helpers;
 	using static Helpers.Configuration;
 
-	public class ConfigurationActivity: ListFragment
+	public class ConfigurationActivity: LazyListFragment
 	{
 		public static readonly Dictionary<string, int> SpecialFolders=
 			new Dictionary<string, int>
@@ -36,15 +35,26 @@ namespace StorageHistory
 		HashSet<int> MonitoredIndices;
 
 
-		public override View OnCreateView(LayoutInflater inflater, ViewGroup mainView, Bundle savedInstanceState)
+		/// <summary>
+		///  Adds `activity_configuration.xml` to the main view, now or later depending on the configuration view's potential visibility.
+		/// </summary>
+		public override View OnCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState)
+			=> this.Inflate( ViewIndices.Configuration, inflater, Resource.Layout.activity_configuration, parent );
+
+
+		/// <summary>
+		///  Called when the configuration view and its children are initialized.
+		/// </summary>
+		public override void OnInflate(View view, bool immediate)
 		{
+			base.OnInflate(view, immediate);
+
 			var monitoredDirectories= Synchronizer.GetDirectories();
 			MonitoredIndices= new HashSet<int>( monitoredDirectories.Count );
 			
 			int maxL= SpecialFolders.Count + monitoredDirectories.Count + 1;
 			Directories= new List<string>(maxL);
 			DirectoryLocations= new List<string>(maxL);
-
 
 			Directories.Add( Resources.GetString(Resource.String.shared_storage_name) );
 			DirectoryLocations.Add( Environment.ExternalStorageDirectory.AbsolutePath );
@@ -56,7 +66,6 @@ namespace StorageHistory
 
 			Directories.Add( Resources.GetString(Resource.String.app_directory_name) );
 			DirectoryLocations.Add( Context.DataDir.AbsolutePath );
-
 
 			// add user-defined folders to list
 			foreach ( var dir in monitoredDirectories )
@@ -71,17 +80,6 @@ namespace StorageHistory
 			}
 
 			ListAdapter= new ArrayAdapter<string>(Context, Resource.Layout.configuration_item, Directories);
-
-			// activity_configuration.xml is added as a fragment
-			return inflater.Inflate(Resource.Layout.activity_configuration, mainView, false);
-		}		
-
-		/// <summary>
-		///  Called when the configuration view and its children are initialized.
-		/// </summary>
-		public override void OnViewCreated(View view, Bundle savedInstanceState)
-		{
-			base.OnViewCreated(view, savedInstanceState);
 
 			foreach ( int i in MonitoredIndices )
 				ListView.SetItemChecked(i, true);

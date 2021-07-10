@@ -6,6 +6,7 @@ using Android.App;
 using Android.Content;
 using Android.OS;
 using Xamarin.Essentials;
+using System.Threading;
 
 namespace StorageHistory
 {
@@ -27,11 +28,12 @@ namespace StorageHistory
 
 		private static List<ObserverItem> @base;
 		private static HashSet<string> directories;
+		private static Thread firstUpdater;
+		private static Thread lastUpdater;
 
 		public override void OnCreate() {
 			base.OnCreate();
 			showNotification();
-			updateObservers();
 		}
 
 		public override void OnDestroy() {
@@ -39,8 +41,9 @@ namespace StorageHistory
 			base.OnDestroy();
 		}
 
-		public override StartCommandResult OnStartCommand(Intent intent, StartCommandFlags flags, int startId) {
-			updateObservers();
+		public override StartCommandResult OnStartCommand(Intent intent, StartCommandFlags flags, int startId)
+		{
+			new Thread(updateObservers).Start();
 			return StartCommandResult.Sticky;
 		}
 
@@ -49,36 +52,77 @@ namespace StorageHistory
 		/// </summary>
 		private static void updateObservers()
 		{
-			var previousDirs= directories;
-			directories= Synchronizer.GetDirectories();
-			if ( previousDirs != null ) {
-				previousDirs.SymmetricExceptWith(directories);
-				if ( previousDirs.Count == 0 )
-					return ;  // no difference between new set of directories and old set
-			}
+			var newDirectories= Synchronizer.GetDirectories();
+			var previousDirectories= Interlocked.Exchange(ref directories, newDirectories); // gets the previous set of directories while replacing it w/ our new set
 
-			// estimate the number of observer items we'll need
-			int sizeEstimate= directories.Count;
-			sizeEstimate*= avgDirectorySize; // make space for sub-directories
+			var previousUpdater= Interlocked.Exchange(ref lastUpdater, Thread.CurrentThread); // set `lastUpdater` to the current thread while retrieving it's previous value
+			try {
+				var directories= newDirectories;  // in case `newDirectories` becomes only the newly added directories rather than the complete set 
+				
+				if ( previousUpdater != null )
+				{
+					#region Determine The Best Way To Synchronize Multiple Updates
 
-			// Prepare the list of observer items we'll use to monitor each directory and subdirectory.
-			if ( @base == null )
-				@base= new List<ObserverItem>( sizeEstimate );
-			else {
-				@base.Clear();
-				if ( @base.Capacity < sizeEstimate )
-					@base.Capacity= sizeEstimate;
-			}
+						Interlocked.CompareExchange(ref firstUpdater, previousUpdater, null); // `firstUpdater` is only set to previousUpdater if it was null
+						if ( previousDirectories.IsSubsetOf(newDirectories) )  // directory additions can run after one another
+						{
+							if ( newDirectories.Count == previousDirectories.Count )
+								return ;  // don't do anything if directories and newDirectories are the same
 
-			// Create and add an observer item for each directory and subdirectory.
-			foreach ( string path in directories )
-				monitorDirectory(path);
+							// Wait until the previous update has completed
+							previousUpdater.Join();  // so we can add the new directories in a thread-safe manner
+							if ( Interlocked.CompareExchange(ref firstUpdater, Thread.CurrentThread, null) != null )  // set `firstUpdater` to the current thread if it was equal to null
+								return ;  // if the queue of updates was interrupted by a directory being removed
+
+							newDirectories= new HashSet<string> ( newDirectories );  // create a copy of the set...
+							newDirectories.ExceptWith( previousDirectories );         // to store only the newly added directories
+						}
+						else {
+							// Start over if directories were removed
+							previousUpdater= Interlocked.Exchange(ref firstUpdater, Thread.CurrentThread); // ensures that only the last update to arrive here continues
+							if ( previousUpdater != null )
+								previousUpdater.Abort(); // prior updates are cancelled here
+						}
+
+					#endregion
+				}
+				else if ( previousDirectories != null )
+				{
+					// Find any differences
+					previousDirectories.SymmetricExceptWith(newDirectories);
+					if ( previousDirectories.Count == 0 )
+						return ;  // no difference between new set of directories and old set
+				}
+
+				// estimate the number of observer items we'll need
+				int sizeEstimate= directories.Count;
+				sizeEstimate*= avgDirectorySize; // make space for sub-directories
+
+				// Prepare the list of observer items we'll use to monitor each directory and subdirectory.
+				if ( @base == null )
+					@base= new List<ObserverItem>( sizeEstimate );
+				else {
+					if ( directories == newDirectories ) // if we're starting fresh
+						@base.Clear();
+					if ( @base.Capacity < sizeEstimate )
+						@base.Capacity= sizeEstimate;
+				}
+
+				// Create and add an observer item for each directory and subdirectory.
+				foreach ( string path in newDirectories )
+					monitorDirectory(path);
 			
-			if ( directories.Count > 0 )
-			{
-				// update the average directory size
-				avgDirectorySize= ( avgDirectorySize + @base.Count / directories.Count ) / 2;
-				Preferences.Set(AvgDirectorySize_KEY, avgDirectorySize);
+				if ( directories.Count > 0 )
+				{
+					// update the average directory size
+					avgDirectorySize= ( avgDirectorySize + @base.Count / directories.Count ) / 2;
+					Preferences.Set(AvgDirectorySize_KEY, avgDirectorySize);
+				}
+
+			}
+			finally {
+				Interlocked.CompareExchange(ref firstUpdater, null, Thread.CurrentThread); // set `firstUpdater` to null if it's equal to the current thread
+				Interlocked.CompareExchange(ref lastUpdater, null, Thread.CurrentThread); // set `lastUpdater` to null if it's equal to the current thread
 			}
 		}
 
@@ -119,6 +163,7 @@ namespace StorageHistory
 			var notification= new Notification.Builder(this, "storistory.services.low")
 							.SetContentTitle( Resources.GetString(Resource.String.app_name) )
 							.SetContentText( Resources.GetString(Resource.String.notification_message) )
+							.SetContentIntent( PendingIntent.GetActivity(this, 1, new Intent(this, typeof(MainActivity)), PendingIntentFlags.Immutable) )
 							.SetSmallIcon( Resource.Drawable.backup_icon_24 )
 							.SetOngoing( true )
 							.Build();

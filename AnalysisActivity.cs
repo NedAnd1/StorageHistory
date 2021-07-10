@@ -11,18 +11,18 @@ using AndroidX.Fragment.App;
 using AndroidX.SwipeRefreshLayout.Widget;
 using Xamarin.Essentials;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Threading;
 
-using ListFragment= AndroidX.Fragment.App.ListFragment;
 using static Android.Views.ViewGroup;
-
 
 namespace StorageHistory
 {
 	using Helpers;
 	using static Helpers.Configuration;
+	using static Helpers.RuntimeExtensions;
 
-
-	public class AnalysisActivity: ListFragment, SwipeRefreshLayout.IOnRefreshListener
+	public class AnalysisActivity: LazyListFragment, SwipeRefreshLayout.IOnRefreshListener
 	{
 		const int HoursPerDay= 24;
 
@@ -45,25 +45,33 @@ namespace StorageHistory
 
 		public string CurrentDirectory;
 		public TimeSpan CurrentDuration;
+		public string HeaderText;
 		TextView header;
 		Spinner timeSelector;
 		SwipeRefreshLayout mainRefresher;
 		SwipeRefreshLayout emptyRefresher;
 
 			
-		public override View OnCreateView(LayoutInflater inflater, ViewGroup mainView, Bundle savedInstanceState)
-			=> inflater.Inflate(Resource.Layout.activity_analysis, mainView, false) ;
-
-
 		/// <summary>
-		///  Called when the analysis view and its children are initialized.
+		///  Adds `activity_analysis.xml` to the main view, now or later depending on the analysis view's potential visibility.
 		/// </summary>
+		public override View OnCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState)
+			=> this.Inflate(ViewIndices.Analysis, inflater, Resource.Layout.activity_analysis, parent);
+
 		public override void OnViewCreated(View view, Bundle savedInstanceState)
 		{
-			base.OnViewCreated(view, savedInstanceState);
-
 			if ( savedInstanceState != null )
 				CurrentDirectory= savedInstanceState.GetString("currentDirectory");
+
+			base.OnViewCreated(view, savedInstanceState);
+		}
+
+		/// <summary>
+		///  Called when the analysis view and its children are truly initialized.
+		/// </summary>
+		public override void OnInflate(View view, bool immediate)
+		{
+			base.OnInflate(view, immediate);
 
 			int lastNumberOfHours= Preferences.Get(AnalysisDuration_KEY, AnalysisDuration_DEFAULT);
 			CurrentDuration= TimeSpan.FromTicks( TimeSpan.TicksPerHour * lastNumberOfHours );
@@ -92,7 +100,10 @@ namespace StorageHistory
 				emptyRefresher.SetOnRefreshListener(this);
 
 			ListAdapter= new Adapter ( Context );
-			UpdateState( CurrentDirectory );
+
+			if ( immediate )
+				UpdateState( CurrentDirectory );
+			else InvokeTaskOnReady( () => UpdateState( CurrentDirectory ) ); // asynchronously updates the analysis view when the app is no longer loading
 		}
 
 		/// <summary>
@@ -130,65 +141,97 @@ namespace StorageHistory
 		
 		public void OnHeaderClick(object o, EventArgs e)
 		{
+			Loading= true;
 			if ( CurrentDirectory != null )
 				if ( header == null || header.Text.IndexOf('/', 1) > 0 )  // if the current directory is neither special nor a direct child of the root
-					UpdateState(  CurrentDirectory.Substring( 0, CurrentDirectory.LastIndexOf('/') )  ); // go up to the current directory's parent
-				else UpdateState(); // go up to the root
+					UpdateStateAsync(  CurrentDirectory.Substring( 0, CurrentDirectory.LastIndexOf('/') )  ); // go up to the current directory's parent
+				else UpdateStateAsync(); // go up to the root
 		}
 
 		public void OnTimeSelection(object o, AdapterView.ItemSelectedEventArgs itemArgs)
 		{
+			Loading= true;
 			int newDuration= DurationOptions[ itemArgs.Position ];
 			CurrentDuration= TimeSpan.FromTicks( newDuration * TimeSpan.TicksPerHour );
 			Preferences.Set(AnalysisDuration_KEY, newDuration);
-			UpdateState( CurrentDirectory );
+			UpdateStateAsync( CurrentDirectory );
 		}
 
 		public override void OnListItemClick(ListView listView, View itemView, int itemIndex, long itemId)
 		{
+			Loading= true;
 			base.OnListItemClick(listView, itemView, itemIndex, itemId);
 			var adapter= ListAdapter as Adapter;
 			if ( adapter != null )
-				UpdateState( adapter[ itemIndex ].AbsoluteLocation, onlyUpdateIfNonEmpty: true );
+				UpdateStateAsync( adapter[ itemIndex ].AbsoluteLocation, onlyUpdateIfNonEmpty: true );
 		}
 
 		public void OnRefresh()
-		{
-			UpdateState( CurrentDirectory, refreshData: true );
-			if ( mainRefresher != null )
-				mainRefresher.Refreshing= false;
-			if ( emptyRefresher != null )
-				emptyRefresher.Refreshing= false;
-		}
+			=> UpdateStateAsync( CurrentDirectory, refreshData: true );
 
 		public bool UpdateState(string dirPath= null, bool onlyUpdateIfNonEmpty= false, bool refreshData= false)
 		{
-			DateTime startTime= default;
-			if ( CurrentDuration != TimeSpan.Zero )
-				startTime= DateTime.Now - CurrentDuration;
+			bool lockTaken= false;
+			try {
+				updateLock.Enter(ref lockTaken);
 
-			var newTimeline= StatisticsManager.RetrieveTimeline( dirPath, startTime, refreshData );
+				DateTime startTime= default;
+				if ( CurrentDuration != TimeSpan.Zero )
+					startTime= DateTime.Now - CurrentDuration;
 
-			if ( onlyUpdateIfNonEmpty && newTimeline.IsEmpty )
-				return false;
+				var newTimeline= StatisticsManager.RetrieveTimeline( dirPath, startTime, refreshData );
 
-			CurrentDirectory= dirPath;
+				if ( onlyUpdateIfNonEmpty && newTimeline.IsEmpty )
+					return false;
+
+				CurrentDirectory= dirPath;
+				HeaderText= dirPath?.ToUserPath();
+
+				var adapter= ListAdapter as Adapter;
+				if ( adapter != null )
+				{
+					adapter.basePath= dirPath;
+					adapter.Timeline= newTimeline;
+				}
+
+				MainThread.BeginInvokeOnMainThread( UpdateView );
+
+				return true;
+			}
+			finally {
+
+				if ( lockTaken )
+					updateLock.Exit();
+
+				if ( ! updateLock.IsHeld )
+					Loading= false;
+			}
+		}
+
+		private SpinLock updateLock= new SpinLock();
+
+		private bool Loading {
+			set {
+				if ( mainRefresher != null )
+					mainRefresher.Refreshing= value;
+				if ( emptyRefresher != null )
+					emptyRefresher.Refreshing= value;
+			}
+		}
+
+		public void UpdateStateAsync(string dirPath= null, bool onlyUpdateIfNonEmpty= false, bool refreshData= false)
+			=> Task.Run( () => UpdateState(dirPath, onlyUpdateIfNonEmpty, refreshData) );
+
+		public void UpdateView()
+		{
+			( ListAdapter as BaseAdapter )?.NotifyDataSetChanged();
 			if ( header != null )
-				if ( dirPath == null )
+				if ( HeaderText == null )
 					header.Visibility= ViewStates.Gone;
 				else {
 					header.Visibility= ViewStates.Visible;
-					header.Text= dirPath.ToUserPath();
+					header.Text= HeaderText;
 				}
-
-			var adapter= ListAdapter as Adapter;
-			if ( adapter != null )
-			{
-				adapter.basePath= dirPath;
-				adapter.Timeline= newTimeline;
-			}
-
-			return true;
 		}
 
 		/// <summary>
@@ -205,9 +248,8 @@ namespace StorageHistory
 		/// <summary>
 		///  Manages the conversion of <see cref="Helpers.Timeline"/> data into a list of graphs for the most consequential directories. 
 		/// </summary>
-		class Adapter: BaseAdapter
+		class Adapter: BaseAdapter<Timeline.Directory>
 		{
-			private Timeline.Directory[] @base;
 			private DateTime startTime;
 			private DateTime endTime;
 			private Context context;
@@ -232,7 +274,6 @@ namespace StorageHistory
 					}
 					startTime= value.startTime;
 					endTime= value.endTime;
-					NotifyDataSetChanged();
 				}
 			}
 			
@@ -250,13 +291,6 @@ namespace StorageHistory
 
 				return view;
 			}
-
-			public override int Count => @base?.Length ?? 0; // returns 0 if `base` is null
-
-			public override Java.Lang.Object GetItem(int position) => null;
-
-			public override long GetItemId(int position) => position;
-
 		}
 
 		/// <summary>
@@ -273,7 +307,7 @@ namespace StorageHistory
 			public DateTime maxTime;
 			public Timeline.Directory Source;
 
-			private static readonly Paint AxisPaint= new Paint(PaintFlags.AntiAlias) { Color= Color.LightGray };
+			private static readonly Paint AxisPaint= new Paint(PaintFlags.AntiAlias) { Color= new Color(0x7F888888) };
 			private static void initAxis(Context context)
 			{
 				float density= context.Resources.DisplayMetrics.Density,

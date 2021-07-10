@@ -3,7 +3,8 @@ using Android.Systems; // interfaces with the device's low-level Linux kernel
 using Xamarin.Essentials; // for preferences
 using System.Collections.Generic;
 using System.IO.Compression;
-
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace StorageHistory
 {
@@ -56,6 +57,9 @@ namespace StorageHistory
 		private static HashSet<string> directoryInclusions;
 		private static HashSet<string> fileExclusions;
 
+		private static readonly object DirectoryInclusionBarrier= new object();
+		private static readonly ReaderWriterLockSlim FileExclusionLock= new ReaderWriterLockSlim();
+
 		/// <summary>
 		///  Called when either the app or the storage monitor is closing.
 		/// </summary>
@@ -78,14 +82,18 @@ namespace StorageHistory
 		/// </remarks>
 		public static void OnFileChange(string absoluteLocation, FileChangeType fileChange)
 		{
+			if ( fileExclusions == null )
+				initFileExclusions();
 
-			if ( fileExclusions == null ) {
-				var unixFile= Os.Open(ExclusionList_FILE, OsConstants.ORdonly | OsConstants.OCreat,  DefaultFilePermissions);
-				fileExclusions= unixFile.GetStrings(); // reads file into memory
-				Os.Close(unixFile); // no longer needed
+			bool fileExcluded;
+			FileExclusionLock.EnterReadLock();
+			try {
+				fileExcluded= fileExclusions.Contains(absoluteLocation);
+			} finally {
+				FileExclusionLock.ExitReadLock();
 			}
-				
-			if ( ! fileExclusions.Contains(absoluteLocation) ) // changed file is not in exclude-list
+
+			if ( ! fileExcluded ) // changed file is not in exclude-list
 			{
 
 				if ( Preferences.Get(EnableStatistics_KEY, EnableStatistics_DEFAULT) ) {
@@ -116,29 +124,46 @@ namespace StorageHistory
 			{
 				FileDescriptor sizeDictionaryFile= null;
 
-				if ( fileExclusions == null ) {
-					var unixFile= Os.Open(ExclusionList_FILE, OsConstants.ORdonly | OsConstants.OCreat,  DefaultFilePermissions);
-					fileExclusions= unixFile.GetStrings(); // reads file into memory
-					Os.Close(unixFile); // no longer needed
-				}
+				if ( fileExclusions == null )
+					initFileExclusions();
 
 				if ( enableStatistics )
 					sizeDictionaryFile= Os.Open(SizeDictionary_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
 
-				foreach ( FileChange fileChange in changes )
-					if ( ! fileExclusions.Contains(fileChange.AbsoluteLocation) ) // changed file is not in exclude-list
-					{
-						if ( enableStatistics )
-							updateStatistics(fileChange.AbsoluteLocation, sizeDictionaryFile);
+				FileExclusionLock.EnterReadLock();
+				try {
+					foreach ( FileChange fileChange in changes )
+						if ( ! fileExclusions.Contains(fileChange.AbsoluteLocation) ) // changed file is not in exclude-list
+						{
+							if ( enableStatistics )
+								updateStatistics(fileChange.AbsoluteLocation, sizeDictionaryFile);
 
-						if ( enableBackup && fileChange.Type != FileChangeType.Deletion )
-							updateBackupCache(fileChange.AbsoluteLocation, skipExisting: fileChange.Type == FileChangeType.None);
-					}
+							if ( enableBackup && fileChange.Type != FileChangeType.Deletion )
+								updateBackupCache(fileChange.AbsoluteLocation, skipExisting: fileChange.Type == FileChangeType.None);
+						}
+				}
+				finally {
+					FileExclusionLock.ExitReadLock();
+				}
 
 				if ( sizeDictionaryFile != null )
 					Os.Close(sizeDictionaryFile);  // release the handle
 
 			}
+		}
+
+		private static void initFileExclusions()
+		{
+			var unixFile= Os.Open(ExclusionList_FILE, OsConstants.ORdonly | OsConstants.OCreat,  DefaultFilePermissions);
+
+			if ( FileExclusionLock.TryEnterWriteLock(0) )  // only the first thread to arrive here reads the file into memory
+				try {
+					fileExclusions= unixFile.GetStrings(); // reads file into memory
+				}
+				finally {
+					FileExclusionLock.ExitWriteLock();
+					Os.Close(unixFile); // no longer needed
+				}
 		}
 		
 		/// <summary>
@@ -149,11 +174,13 @@ namespace StorageHistory
 		private static void updateBackupCache(string filePath, bool skipExisting= false)
 		{
 			if ( filePath != BackupCache_FOLDER ) // makes sure we don't backup our backups!
-				if ( ! filePath.IsChildOf( BackupCache_FOLDER ) ) // uses the IsChildOf static method in our `RuntimeExtensions.cs` helper
+				if ( ! filePath.IsChildOf( BackupCache_FOLDER ) )
 				{
 					System.Diagnostics.Debug.Assert( filePath[0] == '/' ); // file paths given to updateBackupCache must be absolute
 					string backupFilePath= BackupCache_FOLDER + filePath + ".zip",
-					       backupFileVersion= System.DateTime.UtcNow.ToString(DefaultFileVersionFormat) + System.IO.Path.GetExtension(filePath);
+					       backupFileVersion= System.DateTime.UtcNow.ToString(DefaultFileVersionFormat),
+					       backupFileBackupPath= BackupCache_FOLDER + filePath + " [" + backupFileVersion + "].zip"; // an unusable backup archive will be renamed to this value
+					backupFileVersion+= System.IO.Path.GetExtension(filePath);
 
 					#region Add File To Zip Carrying Previous Versions
 
@@ -181,7 +208,7 @@ namespace StorageHistory
 									if ( ! skipExisting || zipArchive.Entries.Count == 0 )
 										zipArchive.CreateEntryFromFile( filePath, backupFileVersion );
 						} catch ( System.IO.InvalidDataException ) {
-							Os.Rename(backupFilePath, backupFilePath+backupFileVersion); // backup the invalid backup
+							Os.Rename(backupFilePath, backupFileBackupPath); // backup the invalid backup
 							using ( var fileStream= new System.IO.FileStream(backupFilePath, System.IO.FileMode.Create) )
 								using ( var zipArchive= new ZipArchive(fileStream, ZipArchiveMode.Create) )
 									zipArchive.CreateEntryFromFile( filePath, backupFileVersion );
@@ -246,25 +273,40 @@ namespace StorageHistory
 		public static void AddDirectory(string absolutePath, ErrorCallback onError= null)
 		{
 			FileDescriptor unixFile= null;
+			bool added;
 
-			if ( directoryInclusions == null ) {
-				unixFile= Os.Open(DirectoryInclusionList_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
-				directoryInclusions= unixFile.GetStrings(); // reads the entire file such that the read/write offset should now be EOF
+			lock ( DirectoryInclusionBarrier )
+			{
+				if ( directoryInclusions == null ) {
+					unixFile= Os.Open(DirectoryInclusionList_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
+					directoryInclusions= unixFile.GetStrings(); // reads the entire file such that the read/write offset should now be EOF
+				}
+
+				added= directoryInclusions.Add(absolutePath);
 			}
-
-			if ( directoryInclusions.Add(absolutePath) ) // directory wasn't in the collection
+			
+			if ( added ) // directory wasn't in the collection
 			{
 				if ( unixFile == null )
 					unixFile= Os.Open(DirectoryInclusionList_FILE, OsConstants.OWronly | OsConstants.OCreat | OsConstants.OAppend,  DefaultFilePermissions);
 				
 				absolutePath.WriteTo(unixFile); // appends the directory to the end of the file
 				
-				System.IO.Directory.CreateDirectory(absolutePath); // creates the directory if it doesn't already exist
-				OnFileChanges( System.IO.Directory.EnumerateFiles(absolutePath, "*", SafeRecursiveMode).ToFileChanges() );
+				Task.Factory.StartNew( addDirectoryData, absolutePath ); // updates directory statistics while adding it to backup
 			}
-			
+
 			if ( unixFile != null )
 				Os.Close(unixFile); // file no longer needed
+		}
+
+		/// <summary>
+		///  Updates the statistics of the given directory while adding it to backup.
+		/// </summary>
+		private static void addDirectoryData(object absolutePath)
+		{
+			string dirPath= (string)absolutePath;
+			System.IO.Directory.CreateDirectory(dirPath); // creates the directory if it doesn't already exist
+			OnFileChanges( System.IO.Directory.EnumerateFiles(dirPath, "*", SafeRecursiveMode).ToFileChanges() );
 		}
 
 		/// <summary>
@@ -275,20 +317,23 @@ namespace StorageHistory
 		{
 			FileDescriptor unixFile= null;
 
-			if ( directoryInclusions == null ) {
-				unixFile= Os.Open(DirectoryInclusionList_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
-				directoryInclusions= unixFile.GetStrings(); // reads the entire file such that the read/write offset should now be EOF
+			lock ( DirectoryInclusionBarrier )
+			{
+				if ( directoryInclusions == null ) {
+					unixFile= Os.Open(DirectoryInclusionList_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
+					directoryInclusions= unixFile.GetStrings(); // reads the entire file such that the read/write offset should now be EOF
+				}
+
+				if ( directoryInclusions.Remove(absolutePath) ) // directory was in the collection
+				{
+					if ( unixFile == null )
+						unixFile= Os.Open(DirectoryInclusionList_FILE, OsConstants.OWronly | OsConstants.OCreat,  DefaultFilePermissions);
+					else Os.Lseek(unixFile, 0, OsConstants.SeekSet);
+				
+					directoryInclusions.WriteTo(unixFile); // rewrites the collection of directories to the list file
+				}
 			}
 
-			if ( directoryInclusions.Remove(absolutePath) ) // directory was in the collection
-			{
-				if ( unixFile == null )
-					unixFile= Os.Open(DirectoryInclusionList_FILE, OsConstants.OWronly | OsConstants.OCreat,  DefaultFilePermissions);
-				else Os.Lseek(unixFile, 0, OsConstants.SeekSet);
-				
-				directoryInclusions.WriteTo(unixFile); // rewrites the collection of directories to the list file
-			}
-			
 			if ( unixFile != null )
 				Os.Close(unixFile); // file no longer needed
 
@@ -300,13 +345,16 @@ namespace StorageHistory
 		/// </summary>
 		public static HashSet<string> GetDirectories()
 		{
-			if ( directoryInclusions == null ) // if the inclusions file hasn't already been read into memory
+			lock ( DirectoryInclusionBarrier )
 			{
-				var unixFile= Os.Open(DirectoryInclusionList_FILE, OsConstants.ORdonly | OsConstants.OCreat,  DefaultFilePermissions);
-				directoryInclusions= unixFile.GetStrings(); // reads the entire file as a set of strings
-				Os.Close(unixFile); // file no longer needed
+				if ( directoryInclusions == null ) // if the inclusions file hasn't already been read into memory
+				{
+					var unixFile= Os.Open(DirectoryInclusionList_FILE, OsConstants.ORdonly | OsConstants.OCreat,  DefaultFilePermissions);
+					directoryInclusions= unixFile.GetStrings(); // reads the entire file as a set of strings
+					Os.Close(unixFile); // file no longer needed
+				}
+				return new HashSet<string> ( directoryInclusions ); // create a copy for the outside world; don't allow direct access
 			}
-			return new HashSet<string> ( directoryInclusions ); // create a copy for the outside world; don't allow direct access
 		}
 
 
@@ -318,20 +366,28 @@ namespace StorageHistory
 		public static void IgnoreFile(string absolutePath, ErrorCallback onError= null)
 		{
 			FileDescriptor unixFile= null;
+			bool newExclusion;
 
-			if ( fileExclusions == null ) {
-				unixFile= Os.Open(ExclusionList_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
-				fileExclusions= unixFile.GetStrings(); // reads the entire file such that the read/write offset should now be EOF
+			FileExclusionLock.EnterWriteLock();
+			try {
+
+				if ( fileExclusions == null ) {
+					unixFile= Os.Open(ExclusionList_FILE, OsConstants.ORdwr | OsConstants.OCreat,  DefaultFilePermissions);
+					fileExclusions= unixFile.GetStrings(); // reads the entire file such that the read/write offset should now be EOF
+				}
+
+				newExclusion= fileExclusions.Add(absolutePath);
+			}
+			finally {
+				FileExclusionLock.ExitWriteLock();
 			}
 
-			if ( fileExclusions.Add(absolutePath) ) // file wasn't in the collection
+			if ( newExclusion ) // file wasn't in the collection
 			{
-
 				if ( unixFile == null )
 					unixFile= Os.Open(ExclusionList_FILE, OsConstants.OWronly | OsConstants.OCreat | OsConstants.OAppend,  DefaultFilePermissions);
 				
 				absolutePath.WriteTo(unixFile); // appends the filepath to the end of the file
-
 			}
 			
 			if ( unixFile != null )

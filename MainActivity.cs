@@ -17,18 +17,18 @@ namespace StorageHistory
 	using Helpers;
 	using static Helpers.Configuration;
 
-	[Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true)]
+	public static class ViewIndices
+	{
+		public const int Backup= 0;
+		public const int Analysis= 1;
+		public const int Configuration= 2;
+	}
+
+	[Activity(Label= "@string/app_name", Theme= "@style/AppTheme", MainLauncher= true)]
 	public class MainActivity : AppCompatActivity, BottomNavigationView.IOnNavigationItemSelectedListener
 	{
-		ViewPager2 mainView;
-
-		public static class ViewIndices
-		{
-			public const int Backup= 0;
-			public const int Analysis= 1;
-			public const int Configuration= 2;
-
-		}
+		private ViewPager2 mainView;
+		public ViewPager2 ViewPager => mainView;
 
 		/// <summary>
 		///  Called when the app is started or resumed.
@@ -36,19 +36,22 @@ namespace StorageHistory
 		protected override void OnCreate(Bundle savedInstanceState)
 		{
 			base.OnCreate(savedInstanceState);
-			Xamarin.Essentials.Platform.Init(this, savedInstanceState);
 			SetContentView(Resource.Layout.activity_main);
+
+			Xamarin.Essentials.Platform.Init(this, savedInstanceState);
+			PathExtensions.InitializeUserPaths(this);
 
 			mainView= FindViewById<ViewPager2>(Resource.Id.view_main);
 			mainView.Adapter= new ViewManager(this);
 			
 			BottomNavigationView navigation= FindViewById<BottomNavigationView>(Resource.Id.navigation);
-			navigation.SetOnNavigationItemSelectedListener(this);
-			navigation.SelectedItemId= Resource.Id.navigation_home;
-
 			mainView.RegisterOnPageChangeCallback( new SubViewNavigationHandler(navigation) );
 			if ( savedInstanceState != null )
-				mainView.SetCurrentItem( savedInstanceState.GetInt("mainView_currentItem", 1), smoothScroll: false );
+				mainView.SetCurrentItem( savedInstanceState.GetInt("currentPosition", ViewIndices.Analysis), smoothScroll: false );
+			else mainView.SetCurrentItem( ViewIndices.Analysis, smoothScroll: false );
+			mainView.OffscreenPageLimit= 2;
+
+			navigation.SetOnNavigationItemSelectedListener(this);
 
 			bool requestPermissions= false;
 			foreach ( var permisionId in DefaultPermissionsRequired )
@@ -58,8 +61,6 @@ namespace StorageHistory
 			if ( requestPermissions )
 				RequestPermissions(DefaultPermissionsRequired, 1);
 
-			PathExtensions.InitializeUserPaths(ApplicationContext);
-
 			// Start the service that monitors file changes
 			StartForegroundService( new Intent(this, typeof(StorageObserverService) ) );
 
@@ -68,7 +69,7 @@ namespace StorageHistory
 		/// <summary>
 		///  Called when the user responds to a request for permissions.
 		/// </summary>
-		public override void OnRequestPermissionsResult(int requestCode, string[] permissions, [GeneratedEnum] Android.Content.PM.Permission[] grantResults)
+		public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Android.Content.PM.Permission[] grantResults)
 		{
 			Xamarin.Essentials.Platform.OnRequestPermissionsResult(requestCode, permissions, grantResults);
 
@@ -98,7 +99,7 @@ namespace StorageHistory
 		protected override void OnSaveInstanceState(Bundle outState)
 		{
 			base.OnSaveInstanceState(outState);
-			outState.PutInt("mainView_currentItem", mainView.CurrentItem);  // saves the current tab-view's index
+			outState.PutInt("currentPosition", mainView.CurrentItem);  // saves the current tab position
 		}
 
 		protected override void OnDestroy()

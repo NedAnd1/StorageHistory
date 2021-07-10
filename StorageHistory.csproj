@@ -79,10 +79,13 @@
     <Compile Include="ConfigurationActivity.cs" />
     <Compile Include="BackupActivity.cs" />
     <Compile Include="AnalysisActivity.cs" />
+    <Compile Include="Helpers\BaseAdapter.cs" />
     <Compile Include="Helpers\DynamicSnapshot.cs" />
     <Compile Include="Helpers\Configuration.cs" />
     <Compile Include="Helpers\FileExtensions.cs" />
+    <Compile Include="Helpers\LazyListFragment.cs" />
     <Compile Include="Helpers\PathExtensions.cs" />
+    <Compile Include="Helpers\TextAdapter.cs" />
     <Compile Include="StorageObserverService.cs" />
     <Compile Include="Helpers\RuntimeExtensions.cs" />
     <Compile Include="Helpers\Timeline.cs" />
@@ -254,6 +257,12 @@
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\values-sw480dp\dimens.xml">
+      <Generator>MSBuild:UpdateGeneratedFiles</Generator>
+      <SubType>Designer</SubType>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\values-night\colors.xml">
       <Generator>MSBuild:UpdateGeneratedFiles</Generator>
       <SubType>Designer</SubType>
     </AndroidResource>
