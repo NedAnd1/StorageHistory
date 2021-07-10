@@ -32,7 +32,7 @@ namespace StorageHistory
 			else CurrentDirectory= "/";
 
 			// adds `activity_backup.xml` to the main view, now or later depending on the backup view's potential visibility
-			return this.Inflate(ViewIndices.Backup, inflater, Resource.Layout.activity_backup, parent);
+			return this.Inflate(ViewIndices.Backup, inflater, Resource.Layout.backup_activity, parent);
 		}
 
 		/// <summary>

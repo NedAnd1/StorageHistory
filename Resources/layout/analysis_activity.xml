@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+	<LinearLayout
+		android:id="@+id/analysis_menu"
+		android:orientation="horizontal"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:gravity="center_vertical"
+		android:paddingLeft="@dimen/analysis_horizontal_margin"
+		android:paddingVertical="@dimen/analysis_vertical_margin"
+		android:theme="@style/Foreground">
+
+		<TextView
+			android:id="@+id/analysis_header"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_centerVertical="true"
+			android:paddingHorizontal="@dimen/analysis_header_padding"
+			android:layout_weight="1" />
+
+		<Spinner
+			android:id="@+id/analysis_time_selector"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:paddingLeft="@dimen/analysis_horizontal_margin" />
+
+	</LinearLayout>
+
+	<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+		android:id="@+id/analysis_refresher"
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_below="@id/analysis_menu"
+		android:layout_alignParentBottom="true">
+
+		<ListView
+			android:id="@android:id/list"
+			android:choiceMode="singleChoice"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:drawSelectorOnTop="false"
+			android:isScrollContainer="true"
+			android:overScrollMode="always" />
+
+	</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+ 
+	<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+		android:id="@android:id/empty"
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_below="@id/analysis_menu"
+		android:layout_alignParentBottom="true">
+
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/analysis_message"
+			android:gravity="center" />
+
+	</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+</RelativeLayout>

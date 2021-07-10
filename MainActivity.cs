@@ -37,12 +37,12 @@ namespace StorageHistory
 		protected override void OnCreate(Bundle savedInstanceState)
 		{
 			base.OnCreate(savedInstanceState);
-			SetContentView(Resource.Layout.activity_main);
+			SetContentView(Resource.Layout.main);
 
 			Xamarin.Essentials.Platform.Init(this, savedInstanceState);
 			PathExtensions.InitializeUserPaths(this);
 
-			mainView= FindViewById<ViewPager2>(Resource.Id.view_main);
+			mainView= FindViewById<ViewPager2>(Resource.Id.main_view);
 			mainView.Adapter= new ViewManager(this);
 			
 			BottomNavigationView navigation= FindViewById<BottomNavigationView>(Resource.Id.navigation);

@@ -50,7 +50,7 @@ namespace StorageHistory
 		///  Adds `activity_analysis.xml` to the main view, now or later depending on the analysis view's potential visibility.
 		/// </summary>
 		public override View OnCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState)
-			=> this.Inflate(ViewIndices.Analysis, inflater, Resource.Layout.activity_analysis, parent);
+			=> this.Inflate(ViewIndices.Analysis, inflater, Resource.Layout.analysis_activity, parent);
 
 		public override void OnViewCreated(View view, Bundle savedInstanceState)
 		{

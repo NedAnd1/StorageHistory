@@ -40,7 +40,7 @@ namespace StorageHistory
 		///  Adds `activity_configuration.xml` to the main view, now or later depending on the configuration view's potential visibility.
 		/// </summary>
 		public override View OnCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState)
-			=> this.Inflate( ViewIndices.Configuration, inflater, Resource.Layout.activity_configuration, parent );
+			=> this.Inflate( ViewIndices.Configuration, inflater, Resource.Layout.configuration_activity, parent );
 
 
 		/// <summary>
