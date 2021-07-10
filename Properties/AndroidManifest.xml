@@ -2,10 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="1" android:versionName="1.0" package="gsu.nanderson.StorageHistory" android:installLocation="auto">
 	<uses-sdk android:minSdkVersion="28" android:targetSdkVersion="28" />
 	<application android:allowBackup="true" android:icon="@drawable/launcher_icon" android:label="@string/app_name" android:supportsRtl="true" android:theme="@style/AppTheme">
-		<service android:name=".StorageObserverService" android:enabled="true" android:exported="false" android:isolatedProcess="false"/>
-		<receiver android:name=".IntentListener" android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+		<service android:name=".Collection.StorageObserver" android:enabled="true" android:exported="false" android:isolatedProcess="false" />
+		<receiver android:name=".Collection.EventReceiver" android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
 			<intent-filter android:priority="1000">
 				<action android:name="android.intent.action.BOOT_COMPLETED" />
+				<action android:name="android.intent.action.MEDIA_MOUNTED" />
 			</intent-filter>
 		</receiver>
 	</application>

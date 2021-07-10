@@ -63,7 +63,7 @@ namespace StorageHistory
 				RequestPermissions(DefaultPermissionsRequired, 1);
 
 			// Start the service that monitors file changes
-			StartForegroundService( new Intent(this, typeof(StorageObserverService) ) );
+			StartForegroundService( new Intent(this, typeof(StorageObserver) ) );
 
 		}
 

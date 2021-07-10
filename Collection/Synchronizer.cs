@@ -12,7 +12,7 @@ namespace StorageHistory.Collection
 	using static Shared.Configuration;
 
 	/// <summary>
-	///  Receives file changes from <see cref="StorageObserverService"/> and configuration changes from <see cref="ConfigurationActivity"/>.
+	///  Receives file changes from <see cref="StorageObserver"/> and configuration changes from <see cref="ConfigurationActivity"/>,
 	///   managing backups, updating statistics, and marshalling user preferences as needed. 
 	/// </summary>
 	static class Synchronizer

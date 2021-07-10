@@ -5,6 +5,7 @@ using Java.IO;
 using Android.App;
 using Android.Content;
 using Android.OS;
+using Android.Util;
 using Xamarin.Essentials;
 using System.Threading;
 
@@ -15,7 +16,7 @@ namespace StorageHistory.Collection
 	using Debug = System.Diagnostics.Debug;
 
 	[Service]
-	public class StorageObserverService: Service
+	public class StorageObserver: Service
 	{
 		const FileObserverEvents eventsFilter=
 			FileObserverEvents.Create | FileObserverEvents.Modify | FileObserverEvents.Delete
@@ -193,7 +194,7 @@ namespace StorageHistory.Collection
 					path= basePath + path;  // turn relative paths into absolute paths
 				else if ( ! path.StartsWith(basePath) )
 				{
-					Debug.WriteLine($"Warning: Observer {e} event for `{path}` wasn't in `{basePath}`.");
+					Log.Warn("arning", $"Observer {e} event for `{path}` wasn't in `{basePath}`.");
 					path= basePath.Concat(  path.AsSpan().Slice( path.LastIndexOf('/') + 1 )  );
 				}
 
@@ -230,7 +231,7 @@ namespace StorageHistory.Collection
 	/// <summary>
 	///  Receives device startup, storage, and shutdown notifications.
 	/// </summary>
-	public class IntentListener: BroadcastReceiver
+	public class EventReceiver: BroadcastReceiver
 	{
 		public override void OnReceive(Context context, Intent intent)
 		{
@@ -239,7 +240,7 @@ namespace StorageHistory.Collection
 				case Intent.ActionBootCompleted:
 				case Intent.ActionMediaMounted:
 					if ( Preferences.Get(EnableBackup_KEY, EnableBackup_DEFAULT) || Preferences.Get(EnableStatistics_KEY, EnableStatistics_DEFAULT) )
-						context.StartForegroundService( new Intent( context, typeof(StorageObserverService) ) );  // starts or updates the service
+						context.StartForegroundService( new Intent( context, typeof(StorageObserver) ) );  // starts or updates the service
 					break;
 				case Intent.ActionShutdown:
 					Synchronizer.OnExit();

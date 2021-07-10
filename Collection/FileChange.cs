@@ -37,7 +37,7 @@ namespace StorageHistory.Collection
 
 
 	/// <summary>
-	///  The basis of storage history collection; used for initiating updates by <see cref="StorageObserverService"/> and <see cref="Synchronizer"/>.
+	///  The basis of storage history collection; used for initiating updates by <see cref="StorageObserver"/> and <see cref="Synchronizer"/>.
 	/// </summary>
 	public struct FileChange
 	{

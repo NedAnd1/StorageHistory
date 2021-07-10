@@ -101,7 +101,7 @@ namespace StorageHistory
 			}
 
 			// update the file monitoring service
-			Context.StartForegroundService( new Intent( Context, typeof(StorageObserverService) ) );
+			Context.StartForegroundService( new Intent( Context, typeof(StorageObserver) ) );
 		}
 
 

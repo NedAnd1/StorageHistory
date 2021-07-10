@@ -60,6 +60,10 @@
     <AndroidUseSharedRuntime>False</AndroidUseSharedRuntime>
     <AndroidLinkMode>SdkOnly</AndroidLinkMode>
     <EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>
+    <AotAssemblies>false</AotAssemblies>
+    <EnableLLVM>false</EnableLLVM>
+    <AndroidEnableProfiledAot>true</AndroidEnableProfiledAot>
+    <BundleAssemblies>false</BundleAssemblies>
   </PropertyGroup>
   <!--ItemGroup>
     <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="3.3.1" PrivateAssets="All" />
@@ -89,7 +93,7 @@
     <Compile Include="Shared\UI\LazyListFragment.cs" />
     <Compile Include="Shared\Logic\PathExtensions.cs" />
     <Compile Include="Shared\UI\TextAdapter.cs" />
-    <Compile Include="Collection\StorageObserverService.cs" />
+    <Compile Include="Collection\StorageObserver.cs" />
     <Compile Include="Shared\Logic\RuntimeExtensions.cs" />
     <Compile Include="Analysis\Timeline.cs" />
     <Compile Include="MainActivity.cs" />
