@@ -5,7 +5,7 @@ using Java.Lang;
 using Java.Interop;
 using Java.Lang.Reflect;
 
-namespace StorageHistory.Helpers
+namespace StorageHistory.Shared.UI
 {
 
 	/// <summary>

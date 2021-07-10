@@ -14,8 +14,9 @@ using Fragment= AndroidX.Fragment.App.Fragment;
 
 namespace StorageHistory
 {
-	using Helpers;
-	using static Helpers.Configuration;
+	using Collection;
+	using Shared.Logic;
+	using static Shared.Configuration;
 
 	public static class ViewIndices
 	{

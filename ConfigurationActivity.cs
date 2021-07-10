@@ -10,8 +10,9 @@ using System.Collections.Generic;
 
 namespace StorageHistory
 {
-	using Helpers;
-	using static Helpers.Configuration;
+	using Collection;
+	using Shared.UI;
+	using static Shared.Configuration;
 
 	public class ConfigurationActivity: LazyListFragment
 	{

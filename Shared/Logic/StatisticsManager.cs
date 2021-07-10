@@ -4,10 +4,11 @@ using Xamarin.Essentials;
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace StorageHistory
+namespace StorageHistory.Shared.Logic
 {
-	using Helpers;
-	using static Helpers.Configuration;
+	using Analysis;
+	using Collection;
+	using static Configuration;
 
 	/// <summary>
 	///  High-level class to store and retrieve directory statistics.

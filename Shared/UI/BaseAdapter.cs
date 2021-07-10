@@ -1,6 +1,6 @@
 ﻿using Android.Widget;
 
-namespace StorageHistory.Helpers
+namespace StorageHistory.Shared.UI
 {
 
 	/// <summary>
@@ -10,6 +10,8 @@ namespace StorageHistory.Helpers
 	{
 
 		protected T[] @base;
+
+		public T this[ int position ] => @base[ position ];
 
 		public override int Count => @base?.Length ?? 0; // returns 0 if `base` is null
 

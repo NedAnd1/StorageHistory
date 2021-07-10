@@ -1,6 +1,5 @@
 ﻿using Android.OS;
 using Android.Views;
-using Android.Content;
 using Android.Widget;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -9,9 +8,10 @@ using System.Runtime.CompilerServices;
 
 namespace StorageHistory
 {
-	using Helpers;
-	using static Helpers.Configuration;
-	using static Helpers.RuntimeExtensions;
+	using Shared.UI;
+	using Shared.Logic;
+	using static Shared.Configuration;
+	using static Shared.UI.Extensions;
 
 	public class BackupActivity: LazyListFragment
 	{

@@ -75,26 +75,29 @@
     <Reference Include="System.Numerics.Vectors" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Analysis\TimelineAdapter.cs" />
     <Compile Include="BackupDialog.cs" />
+    <Compile Include="Collection\FileChange.cs" />
     <Compile Include="ConfigurationActivity.cs" />
     <Compile Include="BackupActivity.cs" />
     <Compile Include="AnalysisActivity.cs" />
-    <Compile Include="Helpers\BaseAdapter.cs" />
-    <Compile Include="Helpers\DynamicSnapshot.cs" />
-    <Compile Include="Helpers\Configuration.cs" />
-    <Compile Include="Helpers\FileExtensions.cs" />
-    <Compile Include="Helpers\LazyListFragment.cs" />
-    <Compile Include="Helpers\PathExtensions.cs" />
-    <Compile Include="Helpers\TextAdapter.cs" />
-    <Compile Include="StorageObserverService.cs" />
-    <Compile Include="Helpers\RuntimeExtensions.cs" />
-    <Compile Include="Helpers\Timeline.cs" />
+    <Compile Include="Shared\UI\BaseAdapter.cs" />
+    <Compile Include="Collection\DynamicSnapshot.cs" />
+    <Compile Include="Shared\Configuration.cs" />
+    <Compile Include="Shared\Logic\FileExtensions.cs" />
+    <Compile Include="Shared\UI\Extensions.cs" />
+    <Compile Include="Shared\UI\LazyListFragment.cs" />
+    <Compile Include="Shared\Logic\PathExtensions.cs" />
+    <Compile Include="Shared\UI\TextAdapter.cs" />
+    <Compile Include="Collection\StorageObserverService.cs" />
+    <Compile Include="Shared\Logic\RuntimeExtensions.cs" />
+    <Compile Include="Analysis\Timeline.cs" />
     <Compile Include="MainActivity.cs" />
     <Compile Include="Resources\Resource.designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Helpers\Snapshot.cs" />
-    <Compile Include="StatisticsManager.cs" />
-    <Compile Include="Synchronizer.cs" />
+    <Compile Include="Analysis\Snapshot.cs" />
+    <Compile Include="Shared\Logic\StatisticsManager.cs" />
+    <Compile Include="Collection\Synchronizer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Properties\AndroidManifest.xml">
@@ -267,6 +270,7 @@
       <SubType>Designer</SubType>
     </AndroidResource>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
     Other similar extension points exist, see Microsoft.Common.targets.

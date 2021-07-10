@@ -2,7 +2,7 @@
 using Android.Widget;
 using Android.Content;
 
-namespace StorageHistory.Helpers
+namespace StorageHistory.Shared.UI
 {
 
 	/// <summary>

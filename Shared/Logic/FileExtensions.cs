@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace StorageHistory.Helpers
+namespace StorageHistory.Shared.Logic
 {
 	/// <summary>
 	///  Low-level extension methods for reading and writing binary files using Linux systems calls.

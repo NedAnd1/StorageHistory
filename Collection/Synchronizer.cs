@@ -6,51 +6,14 @@ using System.IO.Compression;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace StorageHistory
+namespace StorageHistory.Collection
 {
-	using Helpers;
-	using static Helpers.Configuration;
-
-
-	public enum FileChangeType
-	{
-
-		/// <summary>
-		///  When the event is a result of configuration changes.
-		/// </summary>
-		None,
-		 
-		/// <summary>
-		///   When a file moves within/across monitored directories.
-		/// </summary>
-		Move,
-
-		/// <summary>
-		///  When a file is actually created or is moved from a unmonitored directory to a monitored one.
-		/// </summary>
-		Creation,
-		
-		/// <summary>
-		///  When a file changes but doesn't move.
-		/// </summary>
-		Modification,
-
-		/// <summary>
-		///  When a file is actually deleted or is moved from a monitored directory to an unmonitored one. 
-		/// </summary>
-		Deletion
-
-	}
-
-	public struct FileChange {
-		public string AbsoluteLocation;
-		public FileChangeType Type;
-		public static implicit operator FileChange(string str) => new FileChange { AbsoluteLocation= str };
-	}
+	using Shared.Logic;
+	using static Shared.Configuration;
 
 	/// <summary>
 	///  Receives file changes from <see cref="StorageObserverService"/> and configuration changes from <see cref="ConfigurationActivity"/>.
-	///  managing backup, updating statistics, and marshalling user preferences as needed. 
+	///   managing backups, updating statistics, and marshalling user preferences as needed. 
 	/// </summary>
 	static class Synchronizer
 	{

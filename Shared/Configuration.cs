@@ -4,7 +4,7 @@ using Xamarin.Essentials;
 using static Android.Manifest;
 
 
-namespace StorageHistory.Helpers
+namespace StorageHistory.Shared
 {
 
 	static class Configuration

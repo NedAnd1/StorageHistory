@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace StorageHistory.Helpers
+namespace StorageHistory.Analysis
 {
+	using Shared.Logic;
+
 	struct Timeline
 	{
 		public DateTime startTime;
@@ -281,4 +283,5 @@ namespace StorageHistory.Helpers
 		}
 
 	}
+
 }

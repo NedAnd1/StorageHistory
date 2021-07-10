@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using Android.Systems; // interfaces with device's low-level Linux kernel
 
-namespace StorageHistory.Helpers
+namespace StorageHistory.Analysis
 {
+	using Shared.Logic;
+
 	/// <summary>
-	///  Used to read and analyze directory statistics.
+	///  Used by <see cref="StatisticsManager"/> for reading and analyzing directory statistics.
 	/// </summary>
 	struct Snapshot
 	{
@@ -17,7 +18,8 @@ namespace StorageHistory.Helpers
 		/// <summary>
 		///  Combines multiple snapshots into a single snapshot that consumes less memory
 		/// </summary>
-		public Snapshot(IEnumerable<Snapshot> snapshots) {
+		public Snapshot(IEnumerable<Snapshot> snapshots)
+		{
 			sizeDelta= 0;
 			changeCount= 0;
 			averageTime= default;
@@ -46,7 +48,8 @@ namespace StorageHistory.Helpers
 		/// <summary>
 		///  Adds two snapshots into one snapshot representing a single averaged point in time
 		/// </summary>
-		public static Snapshot operator +(Snapshot inputA, Snapshot inputB) {
+		public static Snapshot operator +(Snapshot inputA, Snapshot inputB)
+		{
 			uint changeCountSum= inputA.changeCount + inputB.changeCount;
 			long averageTickShift= ( inputB.averageTime.Ticks - inputA.averageTime.Ticks ) * inputB.changeCount / changeCountSum;
 
@@ -69,7 +72,8 @@ namespace StorageHistory.Helpers
 		}
 
 
-		public struct Directory: IEquatable<Directory> {
+		public struct Directory: IEquatable<Directory>
+		{
 
 			public long sizeDelta;
 			public string parentLocation;

@@ -1,9 +1,10 @@
 ﻿using System;
 using Android.Systems; // interfaces with the device's low-level Linux kernel
 
-namespace StorageHistory.Helpers
+namespace StorageHistory.Collection
 {
-	using static Configuration;
+	using Shared.Logic;
+	using static Shared.Configuration;
 
 	/// <summary>
 	///  Used to record and store directory statistics.

@@ -6,7 +6,7 @@ using Android.OS;
 using Android.Content;
 using Environment= Android.OS.Environment;
 
-namespace StorageHistory.Helpers
+namespace StorageHistory.Shared.Logic
 {
 
 	/// <summary>

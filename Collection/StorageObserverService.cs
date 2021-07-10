@@ -8,10 +8,10 @@ using Android.OS;
 using Xamarin.Essentials;
 using System.Threading;
 
-namespace StorageHistory
+namespace StorageHistory.Collection
 {
-	using Helpers;
-	using static Helpers.Configuration;
+	using Shared.Logic;
+	using static Shared.Configuration;
 	using Debug = System.Diagnostics.Debug;
 
 	[Service]
