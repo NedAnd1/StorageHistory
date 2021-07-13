@@ -191,33 +191,42 @@ namespace StorageHistory.Shared.Logic
 		/// </summary>
 		public static unsafe void ReplaceDictionaryEntry(this FileDescriptor @this, string newValue, long oldValueFileOffset, int oldValueLength)
 		{
+			int newValueLength= newValue.Length;
 
-			if ( newValue.Length != oldValueLength ) // hoping we won't have to grow/shrink the file
+			if ( newValueLength != oldValueLength ) // hoping we won't have to grow/shrink the file
 			{
-				long oldFileSize= Android.Systems.Os.Fstat(@this).StSize,
-				     newFileSize= oldFileSize + ( newValue.Length - oldValueLength ) * sizeof(char);
+				// Convert lengths to number of bytes
+				newValueLength*= sizeof(char);
+				oldValueLength*= sizeof(char);
 
-				if ( newValue.Length > oldValueLength ) // grow file before memmove
-					Android.Systems.Os.Ftruncate(@this, newFileSize);
+				// Get info needed for growing/shrinking the given file-offset range
+				long oldFileSize= Os.Fstat(@this).StSize,
+				     newFileSize= oldFileSize + newValueLength - oldValueLength,
+				     pageOffset= oldValueFileOffset / Configuration.SystemPageSize * Configuration.SystemPageSize,
+					 mapSize= oldFileSize - pageOffset;
 
-				
-				long pageOffset= oldValueFileOffset / Configuration.SystemPageSize * Configuration.SystemPageSize;
-				long mapSize= oldFileSize - pageOffset;
-				var mapPointer= (char*)
-					Android.Systems.Os.Mmap(0, mapSize, OsConstants.ProtRead | OsConstants.ProtWrite, OsConstants.MapShared, @this, pageOffset);
+				if ( newValueLength > oldValueLength ) // grow file before mem-move
+				{
+					Os.Ftruncate(@this, newFileSize);
+					mapSize= newFileSize - pageOffset;  // the size of mapped memory should include the file's extended size
+				}
 
-				int pageWaste= (int)( oldValueFileOffset - pageOffset ); // amount of the page in bytes that will be skipped / ignored
-				long sizeToMove= mapSize - oldValueLength * sizeof(char) - pageWaste;
-				Buffer.MemoryCopy(mapPointer + pageWaste + oldValueLength, mapPointer + pageWaste + newValue.Length, sizeToMove, sizeToMove);
+				// Retrieve a memory-mapped view of the given file
+				long mapAddress= Os.Mmap(0, mapSize, OsConstants.ProtRead | OsConstants.ProtWrite, OsConstants.MapShared, @this, pageOffset);
 
-				Android.Systems.Os.Munmap( (long) mapPointer, mapSize );
+					// Move file contents after the old value to where the new value will end
+					var oldValuePointer= (byte*)mapAddress + ( oldValueFileOffset - pageOffset ); // pointer to the old value in mapped memory
+					long sizeToMove= oldFileSize - ( oldValueFileOffset + oldValueLength );
+					Buffer.MemoryCopy(  oldValuePointer + oldValueLength,  oldValuePointer + newValueLength,  sizeToMove,  sizeToMove  );
 
-				if ( oldValueLength < newValue.Length ) // shrink file after memmove
-					Android.Systems.Os.Ftruncate(@this, newFileSize);
+				// Release mapped memory
+				Os.Munmap( mapAddress, mapSize );
+
+				if ( oldValueLength < newValueLength ) // shrink file after mem-move
+					Os.Ftruncate(@this, newFileSize);
 			}
 
 			newValue.WriteTo(@this, oldValueFileOffset);
-			// Android.Systems.Os.Pwrite( @this, newValue.ToByteArray(), 0, newValue.Length * sizeof(char), oldValueFileOffset );
 		}
 
 
