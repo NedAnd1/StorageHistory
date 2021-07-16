@@ -37,6 +37,16 @@ namespace StorageHistory.Collection
 			showNotification();
 		}
 
+		public override void OnTrimMemory(TrimMemory level)
+		{
+			base.OnTrimMemory(level);
+			if ( level != TrimMemory.UiHidden )
+			{
+				if ( lastUpdater != null ) // if we're not currently updating the set of directories/observers
+					@base?.TrimExcess();
+			}
+		}
+
 		public override void OnDestroy() {
 			Synchronizer.OnExit();
 			base.OnDestroy();
@@ -186,7 +196,7 @@ namespace StorageHistory.Collection
 				base.StartWatching();
 			}
 
-			~ObserverItem() => base.StopWatching();
+			// ~ObserverItem() => base.StopWatching();  // OS handles this for us
 
 			public override void OnEvent(FileObserverEvents e, string path)
 			{

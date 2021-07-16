@@ -37,7 +37,7 @@ namespace StorageHistory.Shared.Logic
 			this.autoClose= autoClose;
 			if ( ++InstanceCount == 1 && BinaryBuffer != null )
 			{
-				binaryBuffer= BinaryBuffer;
+				binaryBuffer= BinaryBuffer; // share buffers to minimize memory churn and memory usage
 				stringBuffer= StringBuffer;
 			}
 			else {
@@ -327,6 +327,20 @@ namespace StorageHistory.Shared.Logic
 
 		public static string ReadString(FileDescriptor file, char terminator= '\0')
 			=> GetDefault(file).ReadString(terminator);
+
+		/// <summary>
+		///  Causes the current thread's unnecessary I/O buffers to be released.
+		/// </summary>
+		/// <remarks>
+		///  Only appropriate for the main thread or the file observer thread
+		///  (the only threads that persist long term).
+		/// </remarks>
+		public static void TrimMemory()
+		{
+			Default= null;
+			BinaryBuffer= null;
+			StringBuffer= null;
+		}
 
 	}
 }

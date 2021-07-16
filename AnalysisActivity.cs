@@ -2,6 +2,7 @@
 using Android.OS;
 using Android.Views;
 using Android.Widget;
+using Android.Content;
 using AndroidX.SwipeRefreshLayout.Widget;
 using Xamarin.Essentials;
 using System.Threading;
@@ -16,7 +17,7 @@ namespace StorageHistory
 	using static Shared.Configuration;
 	using static Shared.UI.Extensions;
 
-	public class AnalysisActivity: LazyListFragment, SwipeRefreshLayout.IOnRefreshListener
+	public class AnalysisActivity: LazyListFragment, SwipeRefreshLayout.IOnRefreshListener, IComponentCallbacks2
 	{
 		const int HoursPerDay= 24;
 
@@ -66,6 +67,7 @@ namespace StorageHistory
 		public override void OnInflate(View view, bool immediate)
 		{
 			base.OnInflate(view, immediate);
+			Context.RegisterComponentCallbacks(this); // to support TrimMemory events
 
 			int lastNumberOfHours= Preferences.Get(AnalysisDuration_KEY, AnalysisDuration_DEFAULT);
 			CurrentDuration= TimeSpan.FromTicks( TimeSpan.TicksPerHour * lastNumberOfHours );
@@ -228,6 +230,15 @@ namespace StorageHistory
 				}
 		}
 
+		public void OnTrimMemory(TrimMemory level)
+		{
+			if ( level != TrimMemory.UiHidden )
+			{
+				if ( updateLock.IsHeld is false ) // make sure we're not using what we're about to get rid of
+					StatisticsManager.TrimMemory(); // deletes the snapshots cache used for analysis
+			}
+		}
+
 		/// <summary>
 		///  Saves the current directory before the activity is destroyed.
 		/// </summary>
@@ -235,6 +246,15 @@ namespace StorageHistory
 		{
 			base.OnSaveInstanceState(outState);
 			outState.PutString("currentDirectory", CurrentDirectory);
+		}
+
+		/// <summary>
+		///  Called after the fragment is destroyed and after it's removed from existence.
+		/// </summary>
+		public override void OnDetach()
+		{
+			Context.UnregisterComponentCallbacks(this); // to stop listening to TrimMemory events
+			base.OnDetach();
 		}
 
 	}

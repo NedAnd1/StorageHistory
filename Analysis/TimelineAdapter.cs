@@ -71,6 +71,7 @@ namespace StorageHistory.Analysis
 			public Timeline.Directory Source;
 
 			private static readonly Paint AxisPaint= new Paint(PaintFlags.AntiAlias) { Color= new Color(0x7F888888) };
+			private static readonly Path AxisPath= new Path();
 			private static void initAxis(Context context)
 			{
 				float density= context.Resources.DisplayMetrics.Density,
@@ -102,10 +103,10 @@ namespace StorageHistory.Analysis
 				// draw the dashed line that represents the x-axis i.e. no change in size
 				if ( (int)Source.AxisHeight + 1 < canvas.Height )  // if it's above the bottom of the graph
 				{
-					var axisPath= new Path();
-					axisPath.MoveTo(0, Source.AxisHeight);
-					axisPath.LineTo(canvas.Width, Source.AxisHeight);
-					canvas.DrawPath(axisPath, AxisPaint);
+					AxisPath.Rewind();
+					AxisPath.MoveTo(0, Source.AxisHeight);
+					AxisPath.LineTo(canvas.Width, Source.AxisHeight);
+					canvas.DrawPath(AxisPath, AxisPaint);
 				}
 
 				// draw the graph of size changes

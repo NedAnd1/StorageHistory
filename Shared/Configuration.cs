@@ -14,7 +14,13 @@ namespace StorageHistory.Shared
 		///  The number of seconds that must pass before a new snapshot is started, with 1 hour as the default.
 		/// </summary>
 		public const string MinSnapshotDuration_KEY= "minSnapshotDuration";
-		public const int MinSnapshotDuration_DEFAULT= 1; //3600; // 1 second in debug mode
+		public const int MinSnapshotDuration_DEFAULT=
+			#if DEBUG
+				1  // 1 second in debug mode
+			#else
+				3600  // 1 hour in release mode
+			#endif
+			;
 
 
 		public const string EnableBackup_KEY= "enableBackup";

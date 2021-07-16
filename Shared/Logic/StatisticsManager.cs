@@ -129,5 +129,8 @@ namespace StorageHistory.Shared.Logic
 
 		}
 
+		public static void TrimMemory()
+			=> snapshotsCache= null;
+
 	}
 }

@@ -103,6 +103,12 @@ namespace StorageHistory
 			outState.PutInt("currentPosition", mainView.CurrentItem);  // saves the current tab position
 		}
 
+		public override void OnTrimMemory(TrimMemory level)
+		{
+			base.OnTrimMemory(level);
+			UnicodeFileStream.TrimMemory(); // release any I/O buffers the UI thread may have
+		}
+
 		protected override void OnDestroy()
 		{
 			Synchronizer.OnExit();
