@@ -117,15 +117,14 @@ namespace StorageHistory.Collection
 
 		private static void initFileExclusions()
 		{
-			var unixFile= Os.Open(ExclusionList_FILE, OsConstants.ORdonly | OsConstants.OCreat,  DefaultFilePermissions);
-
 			if ( FileExclusionLock.TryEnterWriteLock(0) )  // only the first thread to arrive here reads the file into memory
 				try {
+					var unixFile= Os.Open(ExclusionList_FILE, OsConstants.ORdonly | OsConstants.OCreat,  DefaultFilePermissions);
 					fileExclusions= unixFile.GetStrings(); // reads file into memory
+					Os.Close(unixFile); // no longer needed
 				}
 				finally {
 					FileExclusionLock.ExitWriteLock();
-					Os.Close(unixFile); // no longer needed
 				}
 		}
 		

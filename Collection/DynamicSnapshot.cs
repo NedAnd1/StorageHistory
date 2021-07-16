@@ -71,38 +71,35 @@ namespace StorageHistory.Collection
 			averageTime= averageTime.AddTicks( ( DateTime.UtcNow.Ticks - averageTime.Ticks ) / ++totalChangeCount );  // formula for an unweighted moving average
 		}
 
-
 		public void WriteTo(string filePath)
 		{
-			var unixFile= Os.Open(filePath, OsConstants.OWronly | OsConstants.OCreat | OsConstants.OAppend, DefaultFilePermissions);
+			using var file= new UnicodeFileStream(filePath, OsConstants.OWronly | OsConstants.OCreat | OsConstants.OAppend, DefaultFilePermissions);
 
-			sizeDelta.ToString().WriteTo(unixFile);
-			totalChangeCount.ToString().WriteTo(unixFile);
-			averageTime.ToString(UniversalDateTimeFormat).WriteTo(unixFile); // date must always be last property before directory count
+			sizeDelta.WriteTo(file);
+			totalChangeCount.WriteTo(file);
+			averageTime.ToString(UniversalDateTimeFormat).WriteTo(file); // date must always be last property before directory count
 
 			int directoryCount= 0;
 			for ( Directory node= firstChild; node != null; node= node.nextNode )
 				node.index= ++directoryCount; // set each node's index
 
-			directoryCount.ToString().WriteTo(unixFile);
+			directoryCount.WriteTo(file);
 
 			// write each directory property sequentially
 			for ( Directory node= firstChild; node != null; node= node.nextNode )
 			{
 				if ( node.parent != null )
-					node.parent.index.ToString().WriteTo(unixFile);
-				else "0".WriteTo(unixFile);
+					node.parent.index.WriteTo(file);
+				else "0".WriteTo(file);
 				
 				if ( node.relativeLocation.Length > 0 )
-					node.relativeLocation.WriteTo(unixFile);
-				else "/".WriteTo(unixFile); // replace empty string
+					node.relativeLocation.WriteTo(file);
+				else "/".WriteTo(file); // replace empty string
 
-				node.sizeDelta.ToString().WriteTo(unixFile);
+				node.sizeDelta.WriteTo(file);
 			}
 
-			'\0'.WriteTo(unixFile); // makes sure the snapshot is terminated
-
-			Os.Close(unixFile); // release the handle
+			'\0'.WriteTo(file); // makes sure the snapshot is terminated
 		}
 
 

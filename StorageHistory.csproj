@@ -85,6 +85,8 @@
     <Compile Include="ConfigurationActivity.cs" />
     <Compile Include="BackupActivity.cs" />
     <Compile Include="AnalysisActivity.cs" />
+    <Compile Include="Shared\Logic\Characters.cs" />
+    <Compile Include="Shared\Logic\UnicodeFileStream.cs" />
     <Compile Include="Shared\UI\BaseAdapter.cs" />
     <Compile Include="Collection\DynamicSnapshot.cs" />
     <Compile Include="Shared\Configuration.cs" />

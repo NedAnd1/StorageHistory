@@ -1,5 +1,5 @@
 ﻿using System;
-using Android.Systems; // interfaces with the device's low-level Linux kernel
+using Android.Systems;
 using Xamarin.Essentials;
 using System.Collections.Generic;
 using System.Globalization;
@@ -67,68 +67,66 @@ namespace StorageHistory.Shared.Logic
 		private static unsafe void initializeCache()
 		{
 			snapshotsCache= new List<Snapshot>();
-			var snapshotsFile=
-				Android.Systems.Os.Open(StatisticsDatabase_FILE, OsConstants.ORdonly | OsConstants.OCreat, DefaultFilePermissions);
-				
+
+			using var snapshotsFile= new UnicodeFileStream(StatisticsDatabase_FILE, OsConstants.ORdonly | OsConstants.OCreat, DefaultFilePermissions);
 			while ( true )
 			{
-				string newString;
+				Characters newString; // for temporary data that we don't need to keep as strings on the heap
 				var currSnapshot= new Snapshot();
 
-				newString= snapshotsFile.ReadString();
-				if ( newString == null || ! long.TryParse(newString, out currSnapshot.sizeDelta ) )
+				newString= snapshotsFile.ReadCharacters();
+				if ( newString.IsNull || ! long.TryParse(newString, out currSnapshot.sizeDelta ) )
 					break;
 
-				newString= snapshotsFile.ReadString();
-				if ( newString == null || ! uint.TryParse(newString, out currSnapshot.changeCount ) )
+				newString= snapshotsFile.ReadCharacters();
+				if ( newString.IsNull || ! uint.TryParse(newString, out currSnapshot.changeCount ) )
 					break;
 
-				newString= snapshotsFile.ReadString();
-				if ( newString == null || ! DateTime.TryParseExact(newString, UniversalDateTimeFormat, null, DateTimeStyles.None, out currSnapshot.averageTime ) )
+				newString= snapshotsFile.ReadCharacters();
+				if ( newString.IsNull || ! DateTime.TryParseExact(newString, UniversalDateTimeFormat, null, DateTimeStyles.None, out currSnapshot.averageTime ) )
 					break;
 
 				int directoryCount;
-				newString= snapshotsFile.ReadString();
-				if ( newString == null || ! int.TryParse(newString, out directoryCount) )
+				newString= snapshotsFile.ReadCharacters();
+				if ( newString.IsNull || ! int.TryParse(newString, out directoryCount) )
 					break;
 
-				var absolutePaths= stackalloc ReadOnlySpan<char> [ directoryCount ];
+				var absolutePaths= stackalloc ReadOnlySpan<char> [ directoryCount ]; // this temporary array also avoids the heap
 				currSnapshot.children= new HashSet<Snapshot.Directory> ( directoryCount );			
 				for ( int currIndex= 0; currIndex < directoryCount; ++currIndex )
 				{
 					uint parentIndex;
 					Snapshot.Directory currDirectory;
 
-					newString= snapshotsFile.ReadString();
-					if ( newString == null || ! uint.TryParse(newString, out parentIndex) )
+					newString= snapshotsFile.ReadCharacters();
+					if ( newString.IsNull || ! uint.TryParse(newString, out parentIndex) )
 						break;
 
-					var relativeLocation= snapshotsFile.ReadString();
+					var relativeLocation= snapshotsFile.ReadCharacters();
 					currDirectory.parentLocation= null;
 					if ( relativeLocation == "/" )
 						currDirectory.absoluteLocation= string.Empty;
 					else if ( parentIndex == 0 )
-						currDirectory.absoluteLocation= relativeLocation;
+						currDirectory.absoluteLocation= relativeLocation.ToString();
 					else {
 						currDirectory.parentLocation= absolutePaths[parentIndex-1].AsString();
 						currDirectory.absoluteLocation= System.IO.Path.Join(absolutePaths[parentIndex-1], relativeLocation);
 					}
 					absolutePaths[ currIndex ]= currDirectory.absoluteLocation.AsSpan();
 
-					newString= snapshotsFile.ReadString();
-					if ( newString == null || ! long.TryParse(newString, out currDirectory.sizeDelta) )
+					newString= snapshotsFile.ReadCharacters();
+					if ( newString.IsNull || ! long.TryParse(newString, out currDirectory.sizeDelta) )
 						break;
 
 					currSnapshot.children.Add(currDirectory);
 				}
 
-				if ( snapshotsFile.ReadString() != string.Empty ) // valid snapshot MUST end with empty string signaling its end
+				if ( snapshotsFile.ReadLengthOfString() != 0 ) // valid snapshot MUST end with empty string signaling its end
 					break;
 
 				snapshotsCache.Add(currSnapshot);
 			}
 
-			Os.Close(snapshotsFile); // no longer need the file
 		}
 
 	}
