@@ -205,7 +205,7 @@ namespace StorageHistory.Collection
 				else if ( ! path.StartsWith(basePath) )
 				{
 					Log.Warn("arning", $"Observer {e} event for `{path}` wasn't in `{basePath}`.");
-					path= basePath.Concat(  path.AsSpan().Slice( path.LastIndexOf('/') + 1 )  );
+					path= basePath.Concat(  path.FastSlice( path.LastIndexOf('/') + 1 )  );
 				}
 
 				switch ( e )

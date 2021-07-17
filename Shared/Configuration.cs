@@ -101,6 +101,8 @@ namespace StorageHistory.Shared
 
 		public static readonly EnumerationOptions SafeRecursiveMode= new EnumerationOptions { IgnoreInaccessible= true, RecurseSubdirectories= true, AttributesToSkip= default /* enumerate hidden & system items */ };
 
+		public static readonly EnumerationOptions DefaultSearchOptions= new EnumerationOptions { IgnoreInaccessible= true, RecurseSubdirectories= false, AttributesToSkip= default /* enumerate hidden & system items */ };
+
 
 		public const int MaxStackAllocLength= 512 * 1024 / 8;
 

@@ -112,7 +112,7 @@ namespace StorageHistory.Shared.Logic
 						currDirectory.parentLocation= absolutePaths[parentIndex-1].AsString();
 						currDirectory.absoluteLocation= System.IO.Path.Join(absolutePaths[parentIndex-1], relativeLocation);
 					}
-					absolutePaths[ currIndex ]= currDirectory.absoluteLocation.AsSpan();
+					absolutePaths[ currIndex ]= currDirectory.absoluteLocation.AsNullableSpan();  // treats a null absolute location as an empty string
 
 					newString= snapshotsFile.ReadCharacters();
 					if ( newString.IsNull || ! long.TryParse(newString, out currDirectory.sizeDelta) )

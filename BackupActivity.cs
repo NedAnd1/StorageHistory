@@ -1,6 +1,7 @@
 ﻿using Android.OS;
 using Android.Views;
 using Android.Widget;
+using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xamarin.Essentials;
@@ -60,33 +61,27 @@ namespace StorageHistory
 		[MethodImpl(MethodImplOptions.Synchronized)]
 		public void UpdateState(string itemPath)
 		{
-			var file= new Java.IO.File( BackupCache_FOLDER + itemPath );
-			if ( file.IsDirectory )
+			var dir= new DirectoryInfo ( BackupCache_FOLDER + itemPath );
+			if ( dir.Exists )
 			{
 				if ( itemPath.EndsWith("/..") ) // handles the directory "Up" action
 					if ( HeaderText == null || HeaderText.IndexOf('/') > 0 )
 						itemPath= itemPath.Substring( 0, itemPath.LastIndexOf('/', itemPath.Length-4).Or(1) );
-					else file= new Java.IO.File (  BackupCache_FOLDER  +  ( itemPath= "/" )  );  // revert from the expanded dir back to the root of the backup folder
+					else dir= new DirectoryInfo ( BackupCache_FOLDER + ( itemPath= "/" ) );  // revert from the expanded dir back to the root of the backup folder
 
-				string[] fileNames;
+				bool atRoot= true;
 				RealFileNames.Clear();
 				if ( itemPath.Length > 1 )
 				{
-					RealFileNames.Add("..");
-					RealFileNames.AddRange( file.List() ); // adds each file to the list of items
-					fileNames= RealFileNames.ToArray();
-					for ( int i= 0; i < fileNames.Length; ++i  )				// removes the internal file extension of backup archives
-						fileNames[i]= fileNames[i].ToUserFilename( parent: file );  // and transforms expanded dir paths into user-facing ones
+					atRoot= false;
+					RealFileNames.Add("..");  // show the directory for going up
 				}
-				else {
-					fileNames= file.List();
-					for ( int i= 0; i < fileNames.Length; ++i  )
-					{
-						var fileName= file.ExpandChild( fileNames[i] );  // expands linearly nested directories
-						RealFileNames.Add(fileName);
-						fileNames[i]= fileName.ToUserFilename( parent: file );
-					}
-				}
+				foreach ( var child in dir.EnumerateFileSystemInfos("*", DefaultSearchOptions) )  // adds each file to the list of items
+					RealFileNames.Add(  child is DirectoryInfo directory ?  directory.Expand() : child.Name  );  // expands linearly nested directories
+
+				var fileNames= new string [ RealFileNames.Count ];
+				for ( int i= 0; i < RealFileNames.Count; ++i )				               // removes the internal file extension of backup archives
+					fileNames[i]= RealFileNames[i].ToUserFilename( parentIsRoot: atRoot );  // and transforms expanded dir paths into user-facing ones
 
 				UserFileNames= fileNames;
 				CurrentDirectory= itemPath;
@@ -103,6 +98,7 @@ namespace StorageHistory
 		{
 			if ( ListAdapter is TextAdapter adapter )
 				adapter.Items= UserFileNames;
+
 			if ( header != null )
 				header.Text= HeaderText;
 		}
@@ -123,7 +119,7 @@ namespace StorageHistory
 			=> Task.Factory.StartNew( UpdateState, itemPath );
 			
 		public override void OnListItemClick(ListView listView, View itemView, int itemIndex, long itemId)
-			=> UpdateStateAsync( System.IO.Path.Combine( CurrentDirectory, RealFileNames[ itemIndex ] ) );
+			=> UpdateStateAsync( Path.Combine( CurrentDirectory, RealFileNames[ itemIndex ] ) );
 
 		/// <summary>
 		///  Saves the current directory and file seen in backup before the activity is destroyed.

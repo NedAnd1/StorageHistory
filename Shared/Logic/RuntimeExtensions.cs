@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -36,88 +34,127 @@ namespace StorageHistory.Shared.Logic
 
 
 		/// <summary>
+		///  Retrieves the element at the given index without a bounds check.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ref T FastGet<T>(this Span<T> src, int index)
+			=> ref Unsafe.Add( ref MemoryMarshal.GetReference(src), index );
+
+		/// <summary>
+		///  Retrieves the element at the given index without a bounds check.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ref readonly T FastGet<T>(this ReadOnlySpan<T> src, int index)
+			=> ref Unsafe.Add( ref MemoryMarshal.GetReference(src), index );
+
+	
+		/// <summary>
+		///  Slices the span without any parameter boundary checks.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Span<T> FastSlice<T>(this Span<T> src, int start)
+			=> MemoryMarshal.CreateSpan( ref src.FastGet(start), src.Length-start );
+
+		/// <summary>
+		///  Slices the span without any parameter boundary checks.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ReadOnlySpan<T> FastSlice<T>(this ReadOnlySpan<T> src, int start)
+			=> MemoryMarshal.CreateReadOnlySpan( ref Unsafe.AsRef( src.FastGet(start) ), src.Length-start );
+
+		/// <summary>
+		///  Slices the string into a span of characters without any copying or parameter boundary checks.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ReadOnlySpan<char> FastSlice(this string src, int start)
+			=> MemoryMarshal.CreateReadOnlySpan( ref Unsafe.AsRef( src.AsSpan().FastGet(start) ), src.Length-start );
+
+
+		/// <summary>
+		///  Slices the span without any parameter boundary checks.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Span<T> FastSlice<T>(this Span<T> src, int start, int length)
+			=> MemoryMarshal.CreateSpan( ref src.FastGet(start), length-start );
+
+		/// <summary>
+		///  Slices the span without any parameter boundary checks.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ReadOnlySpan<T> FastSlice<T>(this ReadOnlySpan<T> src, int start, int length)
+			=> MemoryMarshal.CreateReadOnlySpan( ref Unsafe.AsRef( src.FastGet(start) ), length-start );
+
+		/// <summary>
+		///  Slices the string into a span of characters without any copying or parameter boundary checks.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ReadOnlySpan<char> FastSlice(this string src, int start, int length)
+			=> MemoryMarshal.CreateReadOnlySpan( ref Unsafe.AsRef( src.AsSpan().FastGet(start) ), length-start );
+
+
+			
+		/// <summary>
+		///  Converts the string to a span of characters, assuming it isn't null (otherwise it throws a null reference exception).
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ReadOnlySpan<char> AsSpan(this string src)
+			=> MemoryMarshal.CreateReadOnlySpan( ref Unsafe.As<String>(src).FirstChar, src.Length );
+
+		/// <summary>
+		///  Creates an empty span of characters if the given string is null.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ReadOnlySpan<char> AsNullableSpan(this string src)
+			=> MemoryExtensions.AsSpan(src);
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Span<char> AsWritableSpan(this string src)
+			=> MemoryMarshal.CreateSpan( ref Unsafe.As<String>(src).FirstChar, src.Length );
+
+		/// <summary> For accessing private string fields directly without reflection. </summary>
+		private class String
+		{
+			public int Length;
+			public char FirstChar;
+		}
+
+
+		
+		/// <summary>
 		///  Returns the string referenced by an unsliced span of characters. 
 		/// </summary>
-		internal static string AsString(this ReadOnlySpan<char> @this)
+		/// <remarks>
+		///  An invalid reference is returned if the span doesn't actually point to the start of a mamaged string.
+		/// </remarks>
+		internal static unsafe string AsString(this ReadOnlySpan<char> @this)
 		{
-			var union= new SpanUnion { UnmanagedString= @this };
-			union.Pointer-= RuntimeHelpers.OffsetToStringData;
-			return union.ManagedString;
+			var stringPointer= (byte*)Unsafe.AsPointer( ref MemoryMarshal.GetReference(@this) ) - RuntimeHelpers.OffsetToStringData;
+			return Unsafe.Read<string>( &stringPointer );
 		}
 
 
 		/// <summary>
 		///  Concatenates the string with a span of characters. 
 		/// </summary>
-		public static unsafe string Concat(this string strA, ReadOnlySpan<char> strB)
+		public static string Concat(this string strA, ReadOnlySpan<char> strB)
         {
-            var strOut= new string( '\0' ,  checked(strA.Length+strB.Length) );
-            fixed ( char* outPtr= strOut )
-            {
-                var outSpan= new Span<char>(outPtr, strOut.Length);
-				strA.AsSpan().CopyTo( outSpan );
-				strB.CopyTo( outSpan.Slice(strA.Length) );
-            }
-            return strOut;
+			var strOut= new string ( '\0' , strA.Length + strB.Length ); // string .ctor does the checking for us
+			var outSpan= strOut.AsWritableSpan();
+			strA.AsSpan().CopyTo( outSpan );
+			strB.CopyTo( outSpan.FastSlice(strA.Length) );
+			return strOut;
         }
 
 
 		/// <summary>
 		///  Emulates ECMAScript slicing behavior.
 		/// </summary>
-		public static Span<char> slice(this Span<char> @this, int start, int end) => @this.Slice(start, end-start);
-
-
-		[StructLayout(LayoutKind.Explicit)]
-		private ref struct SpanUnion
-		{
-			[FieldOffset(0)]
-			public string ManagedString;
-
-			[FieldOffset(0)]
-			public ReadOnlySpan<char> UnmanagedString;
-
-			[FieldOffset(0)]
-			public IntPtr Pointer;
-		}
-
-		[StructLayout(LayoutKind.Explicit)]
-		private struct ByteUnion
-		{
-			private const string @string= "ABCD"; 
-
-			public static readonly int ArrayStringDelta=
-				Unsafe.ByteOffset( ref Unsafe.AsRef(@string.AsSpan().GetPinnableReference()), ref Unsafe.As<char[]>(@string)[0] ).ToInt32(); 
-
-			[FieldOffset(0)]
-			public string ManagedString;
-
-			[FieldOffset(0)]
-			public byte[] ByteArray;
-
-			[FieldOffset(0)]
-			public IntPtr Pointer;
-
-		}
-
-		[StructLayout(LayoutKind.Explicit)]
-		struct ColorUnion
-		{
-			[FieldOffset(0)]
-			public byte r;
-
-			[FieldOffset(1)]
-			public byte g;
-
-			[FieldOffset(2)]
-			public byte b;
-
-			[FieldOffset(0)]
-			public ushort rg;
-
-			[FieldOffset(1)]
-			public ushort gb;
-		}
+		public static Span<char> slice(this Span<char> @this, int start, int end)
+			#if DEBUG
+				=> @this.Slice(start, end-start);
+			#else
+				=> @this.FastSlice(start, end-start);
+			#endif
 
 	}
 
