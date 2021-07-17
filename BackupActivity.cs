@@ -21,6 +21,8 @@ namespace StorageHistory
 		public string CurrentDirectory;
 		public string CurrentBackupFile;
 		public string HeaderText;
+		public int IndexOfFirstFile;
+		List<string> TempList;
 		TextView header;
 			
 		public override View OnCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState)
@@ -44,8 +46,9 @@ namespace StorageHistory
 			base.OnInflate(view, immediate);
 			header= view.FindViewById<TextView>( Resource.Id.backup_header );
 
+			TempList= new List<string>();
 			RealFileNames= new List<string>();
-			ListAdapter= new TextAdapter(Context, Resource.Layout.backup_item);
+			ListAdapter= new DirectoryAdapter(Context, Resource.Layout.backup_item);
 
 			if ( immediate )
 			{
@@ -76,16 +79,17 @@ namespace StorageHistory
 					atRoot= false;
 					RealFileNames.Add("..");  // show the directory for going up
 				}
-				foreach ( var child in dir.EnumerateFileSystemInfos("*", DefaultSearchOptions) )  // adds each file to the list of items
-					RealFileNames.Add(  child is DirectoryInfo directory ?  directory.Expand() : child.Name  );  // expands linearly nested directories
+				
+				int indexOfFirstFile= AddChildren(dir, RealFileNames, TempList);  // adds each file to the list of items
 
 				var fileNames= new string [ RealFileNames.Count ];
-				for ( int i= 0; i < RealFileNames.Count; ++i )				               // removes the internal file extension of backup archives
-					fileNames[i]= RealFileNames[i].ToUserFilename( parentIsRoot: atRoot );  // and transforms expanded dir paths into user-facing ones
+				for ( int i= 0; i < RealFileNames.Count; ++i )				                                // removes the internal file extension of backup archives
+					fileNames[i]= RealFileNames[i].ToUserFilename( isFile: i >= indexOfFirstFile, atRoot );  // and transforms expanded dir paths into user-facing ones
 
 				UserFileNames= fileNames;
 				CurrentDirectory= itemPath;
 				HeaderText= itemPath.ToUserPath();
+				IndexOfFirstFile= indexOfFirstFile;
 				MainThread.BeginInvokeOnMainThread( UpdateDirectoryView );
 			}
 			else {
@@ -93,11 +97,35 @@ namespace StorageHistory
 				MainThread.BeginInvokeOnMainThread( UpdateFileView );
 			}
 		}
+
+		/// <summary>
+		///  Adds child directories and files (sorted respectively) to the provided list.
+		/// </summary>
+		/// <returns>
+		///  The number of directories i.e. the position of the first file in the list.
+		/// </returns>
+		private static int AddChildren(DirectoryInfo parent, List<string> directoryNames, List<string> fileNames)
+		{
+			foreach ( var child in parent.EnumerateFileSystemInfos("*", DefaultSearchOptions) )
+				if ( child is DirectoryInfo directory )
+					directoryNames.Add( directory.Expand() );  // expands linearly nested directories
+				else fileNames.Add( child.Name );
+
+			int indexOfFirstFile= directoryNames.Count;
+			directoryNames.Sort();  // sort directories and files separately
+			fileNames.Sort();
+			directoryNames.AddRange(fileNames);  // directories should always come first
+			fileNames.Clear();
+			return indexOfFirstFile;
+		}
 		
 		public void UpdateDirectoryView()
 		{
-			if ( ListAdapter is TextAdapter adapter )
+			if ( ListAdapter is DirectoryAdapter adapter )
+			{
+				adapter.IndexOfFirstFile= IndexOfFirstFile;
 				adapter.Items= UserFileNames;
+			}
 
 			if ( header != null )
 				header.Text= HeaderText;

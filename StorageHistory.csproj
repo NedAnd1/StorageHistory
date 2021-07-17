@@ -94,6 +94,7 @@
     <Compile Include="Shared\UI\Extensions.cs" />
     <Compile Include="Shared\UI\LazyListFragment.cs" />
     <Compile Include="Shared\Logic\PathExtensions.cs" />
+    <Compile Include="Shared\UI\DirectoryAdapter.cs" />
     <Compile Include="Shared\UI\TextAdapter.cs" />
     <Compile Include="Collection\StorageObserver.cs" />
     <Compile Include="Shared\Logic\RuntimeExtensions.cs" />
@@ -276,7 +277,16 @@
       <SubType>Designer</SubType>
     </AndroidResource>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\folder_icon_24.xml">
+      <Generator>MSBuild:UpdateGeneratedFiles</Generator>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\file_icon_24.xml">
+      <Generator>MSBuild:UpdateGeneratedFiles</Generator>
+    </AndroidResource>
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
     Other similar extension points exist, see Microsoft.Common.targets.
