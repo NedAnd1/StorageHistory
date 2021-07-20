@@ -28,6 +28,11 @@ while their imperative counterparts such as the [main entry point](MainActivity.
 [Xamarin.Android](https://docs.microsoft.com/en-us/xamarin/android/) allows the app to be written in C# and run in the CLR/Mono runtime,  
 maintaining the performance of apps written in Java for Android's JVM *cough* *cough* [Runtime](https://en.wikipedia.org/wiki/Android_Runtime).
 
+Multi-threading ensures the UI stays fluid while performing intensive operations.  
+Multiple versions of a file are stored in a single zip archive to save space.  
+Several Unix APIs like `mmap` and `ftruncate` are used in places like our [Unicode file reader](Shared/Logic/UnicodeFileStream.cs),  
+to explore direct use of Android's linux kernel.
+
 ## Support
 Only Android Pie or above is currently supported,  
 but support could be expanded to Oreo or even Lollipop once unit tests are set up.
