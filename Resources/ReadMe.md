@@ -1,44 +1,47 @@
-Images, layout descriptions, binary blobs and string dictionaries can be included					<br/>
-in your application as resource files.  Various Android APIs are designed to						<br/>
+Images, layout descriptions, binary blobs and string dictionaries are included						<br/>
+in this application as resource files.  Various Android APIs are designed to						<br/>
 operate on the resource IDs instead of dealing with images, strings or binary blobs					<br/>
 directly.
 
-For example, a sample Android app that contains a user interface layout (main.xml),					<br/>
-an internationalization string table (strings.xml) and some icons (drawable-XXX/icon.png)			<br/>
-would keep its resources in the "Resources" directory of the application:
+For example, our [main](layout/main.xml) user interface layout, localized [strings](values/strings.xml) table,	<br/>
+and [splash logo](drawable/splash_logo.png)	are organized under this Resources directory as follows:
 
-Resources/																							<br/>
-    drawable/																						<br/>
-        icon.png
+```
+Resources/
+    drawable/
+        splash_logo.png
 
-    layout/																							<br/>
+    layout/
         main.xml
 
-    values/																							<br/>
+    values/
         strings.xml
+```
+<br/>
 
-In order to get the build system to recognize Android resources, set the build action to			<br/>
-"AndroidResource".  The native Android APIs do not operate directly with filenames, but				<br/>
-instead operate on resource IDs.  When you compile an Android application that uses resources,		<br/>
-the build system will package the resources for distribution and generate a class called "R"		<br/>
-(this is an Android convention) that contains the tokens for each one of the resources				<br/>
-included. For example, for the above Resources layout, this is what the R class would expose:
+To get the build system to recognize Android resources, set the build action to "AndroidResource".	<br/>
+Native Android APIs don't operate directly with filenames, but instead operate on resource IDs.		<br/>
+When this app is compiled, the build system packages the resources for distribution					<br/>
+and generates a class called "R" (Android convention) containing the tokens for each resource.		<br/>
+For example, for the above Resources layout, this is what the R class would expose:
 
-public class R {																					<br/>
-    public class drawable {																			<br/>
-        public const int icon = 0x123;																<br/>
+```
+public class R {
+    public class drawable {
+        public const int splash_logo = 0x123;
     }
 
-    public class layout {																			<br/>
-        public const int main = 0x456;																<br/>
+    public class layout {
+        public const int main = 0x456;
     }
 
-    public class strings {																			<br/>
-        public const int first_string = 0xabc;														<br/>
-        public const int second_string = 0xbcd;														<br/>
-    }																								<br/>
+    public class strings {
+        public const int app_name = 0xabc;
+        public const int backup_title = 0xbcd;
+    }
 }
+```
 
-You would then use R.drawable.icon to reference the drawable/icon.png file, or R.layout.main		<br/>
-to reference the layout/main.xml file, or R.strings.first_string to reference the first				<br/>
-string in the dictionary file values/strings.xml.
+Then we use `R.drawable.splash_logo` to reference the `drawable/splash_logo.png` file,				<br/>
+or `R.layout.main` to reference the `layout/main.xml` file, or `R.strings.app_name`					<br/>
+to reference the localized app name in the `values/strings.xml` dictionary file.
